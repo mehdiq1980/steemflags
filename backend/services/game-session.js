@@ -22,7 +22,7 @@ export function recordAnswer(session, correct) {
     ...session,
     questionsAnswered: session.questionsAnswered + 1,
     correctAnswers: session.correctAnswers + (correct ? 1 : 0),
-    points: Math.max(0, session.points + (correct ? 1 : -1))
+    points: session.points + (correct ? 1 : -1)
   };
   next.completed = next.questionsAnswered === TOTAL_QUESTIONS;
   return next;
