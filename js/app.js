@@ -16,7 +16,6 @@ const score = $('scoreLabel');
 const streak = $('streakLabel');
 const flag = $('flagImage');
 const start = $('startButton');
-
 const game = new FlagGame(renderQuestion);
 let answered = false;
 
@@ -44,7 +43,7 @@ function renderQuestion(question, points, number, currentStreak) {
     button.type = 'button';
     button.className = 'answer';
     button.textContent = name;
-    button.addEventListener('click', () => choose(button, name));
+    button.addEventListener('click', () => choose(button, name), { once: true });
     answers.appendChild(button);
   });
 }
@@ -54,6 +53,7 @@ function choose(button, name) {
   answered = true;
   state.energy -= 1;
   const result = game.answer(name);
+  if (!result) return;
 
   if (result.correct) {
     state.sf += 1;
@@ -88,7 +88,6 @@ function startGame() {
 }
 
 start.addEventListener('click', startGame);
-
 next.addEventListener('click', () => {
   if (state.energy > 0) game.next();
   else {
