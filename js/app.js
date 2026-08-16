@@ -2,10 +2,7 @@ import { loadState, saveState, resetState, refreshDailyEnergy } from './storage.
 import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 
-const COMPONENTS = {
-  appShell: './components/app-shell.html'
-};
-
+const COMPONENTS = { appShell: './components/app-shell.html' };
 const $ = (id) => document.getElementById(id);
 
 async function loadComponent(path) {
@@ -15,7 +12,7 @@ async function loadComponent(path) {
 }
 
 async function bootstrap() {
-  const app = document.getElementById('app');
+  const app = $('app');
   try {
     app.innerHTML = await loadComponent(COMPONENTS.appShell);
     startApplication();
@@ -28,21 +25,10 @@ async function bootstrap() {
 function startApplication() {
   let state = refreshDailyEnergy(loadState());
   let progress = loadProgress();
-  const home = $('homeView');
-  const gameView = $('gameView');
-  const answers = $('answers');
-  const feedback = $('feedback');
-  const next = $('nextButton');
-  const energy = $('energyValue');
-  const sf = $('sfValue');
-  const counter = $('questionCounter');
-  const score = $('scoreLabel');
-  const streak = $('streakLabel');
-  const flag = $('flagImage');
-  const start = $('startButton');
-  const progressSummary = $('progressSummary');
-  const menu = $('menu');
-  const menuButton = $('menuButton');
+  const home = $('homeView'), gameView = $('gameView'), answers = $('answers');
+  const feedback = $('feedback'), next = $('nextButton'), energy = $('energyValue'), sf = $('sfValue');
+  const counter = $('questionCounter'), score = $('scoreLabel'), streak = $('streakLabel'), flag = $('flagImage');
+  const start = $('startButton'), progressSummary = $('progressSummary'), menu = $('menu'), menuButton = $('menuButton');
   const game = new FlagGame(renderQuestion);
   let answered = false;
 
@@ -57,7 +43,7 @@ function startApplication() {
 
   function renderQuestion(question, points, number, currentStreak) {
     answered = false;
-    counter.textContent = `Question ${number}`;
+    counter.textContent = `Question ${number} of ${game.totalQuestions}`;
     score.textContent = `Score: ${points}`;
     streak.textContent = `🔥 ${currentStreak}`;
     flag.textContent = question.country[1];
@@ -66,7 +52,6 @@ function startApplication() {
     feedback.textContent = '';
     feedback.className = 'feedback';
     next.hidden = true;
-
     question.options.forEach(([name]) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -78,14 +63,11 @@ function startApplication() {
   }
 
   function choose(button, name) {
-    if (answered || state.energy <= 0) return;
+    if (answered) return;
     const result = game.answer(name);
     if (!result) return;
-
     answered = true;
-    state.energy -= 1;
     progress = recordAnswer(progress, result.correct, result.streak);
-
     if (result.correct) {
       state.sf += 1;
       feedback.textContent = `Correct! +1 SF${result.streak > 1 ? ` · ${result.streak} streak` : ''}`;
@@ -97,12 +79,10 @@ function startApplication() {
       feedback.className = 'feedback bad';
       button.classList.add('wrong');
     }
-
     [...answers.children].forEach((answerButton) => {
       answerButton.disabled = true;
       if (answerButton.textContent === result.answer) answerButton.classList.add('correct');
     });
-
     saveState(state);
     saveProgress(progress);
     renderStats();
@@ -113,6 +93,9 @@ function startApplication() {
     state = refreshDailyEnergy(loadState());
     renderStats();
     if (state.energy <= 0) return;
+    // One energy is consumed per 20-question game, not per question.
+    state.energy -= 1;
+    saveState(state);
     game.reset();
     progress = recordGame(progress);
     saveProgress(progress);
@@ -123,45 +106,27 @@ function startApplication() {
   }
 
   start.addEventListener('click', startGame);
-
   next.addEventListener('click', () => {
-    if (state.energy > 0) {
-      game.next();
-    } else {
-      feedback.textContent = 'No energy left today. Come back tomorrow.';
-      feedback.className = 'feedback bad';
-      next.hidden = true;
+    if (game.isComplete()) {
+      gameView.hidden = true;
+      home.hidden = false;
+      feedback.textContent = 'Game complete!';
+      renderStats();
+      return;
     }
+    game.next();
   });
-
   menuButton.addEventListener('click', () => {
     menu.hidden = !menu.hidden;
     menuButton.setAttribute('aria-expanded', String(!menu.hidden));
   });
-
-  document.querySelectorAll('[data-action="home"]').forEach((button) => {
-    button.addEventListener('click', () => {
-      gameView.hidden = true;
-      home.hidden = false;
-      menu.hidden = true;
-      menuButton.setAttribute('aria-expanded', 'false');
-      renderStats();
-    });
-  });
-
-  document.querySelectorAll('[data-action="reset"]').forEach((button) => {
-    button.addEventListener('click', () => {
-      state = refreshDailyEnergy(resetState());
-      game.reset();
-      progress = loadProgress();
-      renderStats();
-      gameView.hidden = true;
-      home.hidden = false;
-      menu.hidden = true;
-      menuButton.setAttribute('aria-expanded', 'false');
-    });
-  });
-
+  document.querySelectorAll('[data-action="home"]').forEach((button) => button.addEventListener('click', () => {
+    gameView.hidden = true; home.hidden = false; menu.hidden = true; menuButton.setAttribute('aria-expanded', 'false'); renderStats();
+  }));
+  document.querySelectorAll('[data-action="reset"]').forEach((button) => button.addEventListener('click', () => {
+    state = refreshDailyEnergy(resetState()); game.reset(); progress = loadProgress(); renderStats();
+    gameView.hidden = true; home.hidden = false; menu.hidden = true; menuButton.setAttribute('aria-expanded', 'false');
+  }));
   renderStats();
 }
 
