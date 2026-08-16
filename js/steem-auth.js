@@ -2,12 +2,30 @@ const STEEM_RPC = 'https://api.steemit.com';
 
 function getDsteem() {
   const lib = globalThis.dsteem;
-  if (!lib?.Client || !lib?.PrivateKey) throw new Error('AUTH_LIBRARY_UNAVAILABLE');
+  if (!lib?.PrivateKey) throw new Error('AUTH_LIBRARY_UNAVAILABLE');
   return lib;
 }
 
 function normalizeKey(value) {
   return String(value ?? '').trim().toUpperCase();
+}
+
+async function getAccount(accountName) {
+  const response = await fetch(STEEM_RPC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'condenser_api.get_accounts',
+      params: [[accountName]],
+      id: 1
+    }),
+    cache: 'no-store'
+  });
+  if (!response.ok) throw new Error(`HTTP_${response.status}`);
+  const payload = await response.json();
+  if (payload.error) throw new Error(payload.error.message || 'RPC_ERROR');
+  return payload.result?.[0] ?? null;
 }
 
 export async function verifyPostingKey(username, postingKey) {
@@ -25,17 +43,15 @@ export async function verifyPostingKey(username, postingKey) {
   }
 
   const derivedPublicKey = normalizeKey(privateKey.createPublic().toString());
-  const client = new dsteem.Client(STEEM_RPC);
 
-  let accounts;
+  let account;
   try {
-    accounts = await client.database.getAccounts([accountName]);
+    account = await getAccount(accountName);
   } catch (error) {
     console.error('Steem RPC account lookup failed:', error);
     throw new Error('STEEM_RPC_UNAVAILABLE');
   }
 
-  const account = accounts?.[0];
   if (!account) throw new Error('ACCOUNT_NOT_FOUND');
 
   const authority = account.posting;
@@ -47,12 +63,7 @@ export async function verifyPostingKey(username, postingKey) {
     return normalizeKey(key) === derivedPublicKey ? sum + weight : sum;
   }, 0);
 
-  // A posting key is authorized only when its weight can satisfy the
-  // posting authority threshold. This also supports accounts with
-  // multiple posting keys instead of treating mere key presence as enough.
-  if (matchingWeight < threshold) {
-    throw new Error('POSTING_KEY_UNAUTHORIZED');
-  }
+  if (matchingWeight < threshold) throw new Error('POSTING_KEY_UNAUTHORIZED');
 
   return { username: account.name, publicKey: privateKey.createPublic().toString() };
 }
