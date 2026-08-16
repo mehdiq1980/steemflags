@@ -1,20 +1,41 @@
-const KEY = 'steemflags.state.v2';
+const PREFIX = 'steemflags.state.v2';
+const USER_KEY = 'steemflags.username';
 const defaults = { sf: 0, energy: 3, lastEnergyDay: null };
 
-export function loadState() {
+function key(username) {
+  return `${PREFIX}_${encodeURIComponent(String(username).trim().toLowerCase())}`;
+}
+
+export function getStoredUsername() {
+  return localStorage.getItem(USER_KEY) || null;
+}
+
+export function setStoredUsername(username) {
+  const value = String(username).trim().toLowerCase();
+  localStorage.setItem(USER_KEY, value);
+  return value;
+}
+
+export function clearStoredUsername() {
+  localStorage.removeItem(USER_KEY);
+}
+
+export function loadState(username = getStoredUsername()) {
+  if (!username) return { ...defaults };
   try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    return { ...defaults, ...JSON.parse(localStorage.getItem(key(username)) || '{}') };
   } catch {
     return { ...defaults };
   }
 }
 
-export function saveState(state) {
-  localStorage.setItem(KEY, JSON.stringify(state));
+export function saveState(state, username = getStoredUsername()) {
+  if (!username) throw new Error('Login required');
+  localStorage.setItem(key(username), JSON.stringify(state));
 }
 
-export function resetState() {
-  localStorage.removeItem(KEY);
+export function resetState(username = getStoredUsername()) {
+  if (username) localStorage.removeItem(key(username));
   return { ...defaults };
 }
 
@@ -25,12 +46,12 @@ function localDay() {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function refreshDailyEnergy(state) {
+export function refreshDailyEnergy(state, username = getStoredUsername()) {
   const day = localDay();
   if (state.lastEnergyDay !== day) {
     state.energy = 3;
     state.lastEnergyDay = day;
-    saveState(state);
+    if (username) saveState(state, username);
   }
   return state;
 }
