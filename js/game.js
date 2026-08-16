@@ -45,7 +45,8 @@ export class FlagGame {
     if (!this.current || this.answered || this.isComplete()) return null;
     this.answered = true;
     const correct = name === this.current.country[0];
-    this.score = Math.max(0, this.score + (correct ? 1 : -1));
+    // Game score is allowed to go below zero: +1 correct, -1 wrong.
+    this.score += correct ? 1 : -1;
     this.streak = correct ? this.streak + 1 : 0;
     this.bestStreak = Math.max(this.bestStreak, this.streak);
     if (this.questionNumber >= this.totalQuestions) this.completed = true;
