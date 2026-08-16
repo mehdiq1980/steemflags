@@ -1,4 +1,7 @@
-import { loadState, saveState, resetState, refreshDailyEnergy } from './storage.js';
+import {
+  loadState, saveState, resetState, refreshDailyEnergy,
+  getStoredUsername, setStoredUsername, clearStoredUsername
+} from './storage.js';
 import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 
@@ -23,22 +26,45 @@ async function bootstrap() {
 }
 
 function startApplication() {
-  let state = refreshDailyEnergy(loadState());
-  let progress = loadProgress();
-  const home = $('homeView'), gameView = $('gameView'), answers = $('answers');
+  let username = getStoredUsername();
+  let state = username ? refreshDailyEnergy(loadState(username), username) : loadState();
+  let progress = username ? loadProgress(username) : loadProgress();
+  const loginView = $('loginView'), home = $('homeView'), gameView = $('gameView'), answers = $('answers');
   const feedback = $('feedback'), next = $('nextButton'), energy = $('energyValue'), sf = $('sfValue');
   const counter = $('questionCounter'), score = $('scoreLabel'), streak = $('streakLabel'), flag = $('flagImage');
   const start = $('startButton'), progressSummary = $('progressSummary'), menu = $('menu'), menuButton = $('menuButton');
+  const loginForm = $('loginForm'), usernameInput = $('usernameInput'), loginFeedback = $('loginFeedback');
+  const loggedInUser = $('loggedInUser'), logout = document.querySelector('[data-action="logout"]');
   const game = new FlagGame(renderQuestion);
   let answered = false;
 
   function renderStats() {
     energy.textContent = state.energy;
     sf.textContent = state.sf;
-    start.disabled = state.energy <= 0;
+    start.disabled = !username || state.energy <= 0;
     start.textContent = state.energy > 0 ? 'Start Game' : 'No Energy — Come Back Tomorrow';
     progressSummary.hidden = false;
     progressSummary.textContent = `Games: ${progress.games} · Accuracy: ${accuracy(progress)}% · Best streak: ${progress.bestStreak}`;
+    loggedInUser.textContent = username ? `Logged in as @${username}` : '';
+  }
+
+  function showLoggedOut() {
+    loginView.hidden = false;
+    home.hidden = true;
+    gameView.hidden = true;
+    logout.hidden = true;
+    menu.hidden = true;
+    usernameInput.value = '';
+    usernameInput.focus();
+  }
+
+  function showLoggedIn() {
+    loginView.hidden = true;
+    home.hidden = false;
+    logout.hidden = false;
+    state = refreshDailyEnergy(loadState(username), username);
+    progress = loadProgress(username);
+    renderStats();
   }
 
   function renderQuestion(question, points, number, currentStreak) {
@@ -63,7 +89,7 @@ function startApplication() {
   }
 
   function choose(button, name) {
-    if (answered) return;
+    if (answered || !username) return;
     const result = game.answer(name);
     if (!result) return;
     answered = true;
@@ -74,7 +100,7 @@ function startApplication() {
       feedback.className = 'feedback ok';
       button.classList.add('correct');
     } else {
-      state.sf = Math.max(0, state.sf - 1);
+      state.sf -= 1;
       feedback.textContent = `Wrong. Correct answer: ${result.answer}`;
       feedback.className = 'feedback bad';
       button.classList.add('wrong');
@@ -83,27 +109,49 @@ function startApplication() {
       answerButton.disabled = true;
       if (answerButton.textContent === result.answer) answerButton.classList.add('correct');
     });
-    saveState(state);
-    saveProgress(progress);
+    saveState(state, username);
+    saveProgress(progress, username);
     renderStats();
     next.hidden = false;
   }
 
   function startGame() {
-    state = refreshDailyEnergy(loadState());
+    if (!username) return showLoggedOut();
+    state = refreshDailyEnergy(loadState(username), username);
     renderStats();
     if (state.energy <= 0) return;
-    // One energy is consumed per 20-question game, not per question.
     state.energy -= 1;
-    saveState(state);
+    saveState(state, username);
     game.reset();
     progress = recordGame(progress);
-    saveProgress(progress);
+    saveProgress(progress, username);
     renderStats();
     home.hidden = true;
     gameView.hidden = false;
     game.next();
   }
+
+  loginForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const value = usernameInput.value.trim().toLowerCase();
+    if (!/^[a-z0-9.-]{3,32}$/.test(value)) {
+      loginFeedback.textContent = 'Enter a valid Steem username.';
+      loginFeedback.className = 'feedback bad';
+      return;
+    }
+    username = setStoredUsername(value);
+    loginFeedback.textContent = '';
+    showLoggedIn();
+  });
+
+  logout.addEventListener('click', () => {
+    clearStoredUsername();
+    username = null;
+    state = loadState();
+    progress = loadProgress();
+    game.reset();
+    showLoggedOut();
+  });
 
   start.addEventListener('click', startGame);
   next.addEventListener('click', () => {
@@ -124,10 +172,13 @@ function startApplication() {
     gameView.hidden = true; home.hidden = false; menu.hidden = true; menuButton.setAttribute('aria-expanded', 'false'); renderStats();
   }));
   document.querySelectorAll('[data-action="reset"]').forEach((button) => button.addEventListener('click', () => {
-    state = refreshDailyEnergy(resetState()); game.reset(); progress = loadProgress(); renderStats();
+    if (!username) return;
+    state = refreshDailyEnergy(resetState(username), username);
+    game.reset(); progress = loadProgress(username); renderStats();
     gameView.hidden = true; home.hidden = false; menu.hidden = true; menuButton.setAttribute('aria-expanded', 'false');
   }));
-  renderStats();
+
+  if (username) showLoggedIn(); else showLoggedOut();
 }
 
 bootstrap();
