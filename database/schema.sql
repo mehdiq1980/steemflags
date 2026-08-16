@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS questions (
+  id BIGSERIAL PRIMARY KEY,
+  country_code CHAR(2) NOT NULL,
+  country_name VARCHAR(100) NOT NULL,
+  flag_url TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(country_code)
+);
+
 CREATE TABLE IF NOT EXISTS sf_transactions (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -34,8 +44,9 @@ CREATE TABLE IF NOT EXISTS energy_transactions (
 CREATE TABLE IF NOT EXISTS game_sessions (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  questions_answered SMALLINT NOT NULL DEFAULT 0,
-  correct_answers SMALLINT NOT NULL DEFAULT 0,
+  current_question_id BIGINT REFERENCES questions(id),
+  questions_answered SMALLINT NOT NULL DEFAULT 0 CHECK (questions_answered BETWEEN 0 AND 20),
+  correct_answers SMALLINT NOT NULL DEFAULT 0 CHECK (correct_answers BETWEEN 0 AND 20),
   points INTEGER NOT NULL DEFAULT 0,
   completed BOOLEAN NOT NULL DEFAULT FALSE,
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -51,6 +62,7 @@ CREATE TABLE IF NOT EXISTS referrals (
   CHECK (inviter_id <> invitee_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_questions_active ON questions(active);
 CREATE INDEX IF NOT EXISTS idx_sf_transactions_user_created ON sf_transactions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_energy_transactions_user_created ON energy_transactions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_game_sessions_user_created ON game_sessions(user_id, started_at DESC);
