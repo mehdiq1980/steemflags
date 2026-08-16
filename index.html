@@ -10,17 +10,18 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./">🚩 <span>Steem Flags</span></a>
+    <a class="brand" href="./" aria-label="Steem Flags home">🚩 <span>Steem Flags</span></a>
     <div class="stats" aria-label="Player stats">
       <span>⚡ Energy <b id="energyValue">3</b></span>
       <span>🪙 SF <b id="sfValue">0</b></span>
+      <span id="streakLabel" aria-label="Current streak">🔥 0</span>
     </div>
-    <button id="menuButton" class="iconButton" aria-label="Open menu" aria-expanded="false">☰</button>
+    <button id="menuButton" class="iconButton" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">☰</button>
   </header>
 
   <aside id="menu" class="menu" hidden>
-    <button data-action="home">Home</button>
-    <button data-action="reset">Reset local game</button>
+    <button type="button" data-action="home">Home</button>
+    <button type="button" data-action="reset">Reset local game</button>
     <a href="docs/ARCHITECTURE.md">Architecture</a>
     <a href="docs/ROADMAP.md">Roadmap</a>
   </aside>
@@ -30,19 +31,19 @@
       <p class="eyebrow">GUESS THE FLAG</p>
       <h1>How well do you know the world?</h1>
       <p class="muted">Choose the correct country. Correct answers earn <strong>+1 SF</strong>; wrong answers cost <strong>1 SF</strong>.</p>
-      <button id="startButton" class="primary">Start Game</button>
+      <button id="startButton" class="primary" type="button">Start Game</button>
     </section>
 
-    <section id="gameView" class="card" hidden>
+    <section id="gameView" class="card" hidden aria-live="polite">
       <div class="gameHeader">
         <span id="questionCounter">Question 1</span>
         <span id="scoreLabel">Score: 0</span>
       </div>
-      <div class="flagWrap"><img id="flagImage" alt="Country flag"></div>
+      <div class="flagWrap"><div id="flagImage" class="flag" role="img" aria-label="Country flag"></div></div>
       <h2 id="questionText">Which country does this flag belong to?</h2>
       <div id="answers" class="answers"></div>
-      <p id="feedback" class="feedback" role="status"></p>
-      <button id="nextButton" class="secondary" hidden>Next question</button>
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+      <button id="nextButton" class="secondary" type="button" hidden>Next question</button>
     </section>
   </main>
 
