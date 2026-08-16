@@ -5,6 +5,7 @@ import {
 import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
+import { verifyPostingKey } from './steem-auth.js';
 
 const COMPONENTS = { appShell: './components/app-shell.html' };
 const $ = (id) => document.getElementById(id);
@@ -27,14 +28,15 @@ async function bootstrap() {
 }
 
 function startApplication() {
-  let username = getStoredUsername();
-  let state = username ? refreshDailyEnergy(loadState(username), username) : loadState();
-  let progress = username ? loadProgress(username) : loadProgress();
+  let username = null;
+  let state = loadState();
+  let progress = loadProgress();
+  const savedUsername = getStoredUsername();
   const loginView = $('loginView'), home = $('homeView'), gameView = $('gameView'), answers = $('answers');
   const feedback = $('feedback'), next = $('nextButton'), energy = $('energyValue'), sf = $('sfValue');
   const counter = $('questionCounter'), score = $('scoreLabel'), streak = $('streakLabel'), flag = $('flagImage');
   const start = $('startButton'), progressSummary = $('progressSummary'), menu = $('menu'), menuButton = $('menuButton');
-  const loginForm = $('loginForm'), usernameInput = $('usernameInput'), loginFeedback = $('loginFeedback');
+  const loginForm = $('loginForm'), usernameInput = $('usernameInput'), postingKeyInput = $('postingKeyInput'), loginFeedback = $('loginFeedback');
   const loggedInUser = $('loggedInUser'), logout = document.querySelector('[data-action="logout"]');
   const languageSelect = $('languageSelect');
   const game = new FlagGame(renderQuestion);
@@ -52,8 +54,8 @@ function startApplication() {
     sf.textContent = state.sf;
     start.disabled = !username || state.energy <= 0;
     start.textContent = state.energy > 0 ? t('startGame') : t('noEnergy');
-    progressSummary.hidden = false;
-    progressSummary.textContent = `${t('gamesLabel', getLanguage())}: ${progress.games} · ${t('accuracyLabel', getLanguage())}: ${accuracy(progress)}% · ${t('bestStreakLabel', getLanguage())}: ${progress.bestStreak}`;
+    progressSummary.hidden = !username;
+    if (username) progressSummary.textContent = `${t('gamesLabel')}: ${progress.games} · ${t('accuracyLabel')}: ${accuracy(progress)}% · ${t('bestStreakLabel')}: ${progress.bestStreak}`;
     loggedInUser.textContent = username ? `${t('loggedInAs')} @${username}` : '';
   }
 
@@ -63,7 +65,9 @@ function startApplication() {
     gameView.hidden = true;
     logout.hidden = true;
     menu.hidden = true;
-    usernameInput.value = '';
+    usernameInput.value = savedUsername || '';
+    postingKeyInput.value = '';
+    loginFeedback.textContent = '';
     usernameInput.focus();
     renderStats();
   }
@@ -141,17 +145,39 @@ function startApplication() {
     game.next();
   }
 
-  loginForm.addEventListener('submit', (event) => {
+  loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const value = usernameInput.value.trim().toLowerCase();
+    const postingKey = postingKeyInput.value.trim();
     if (!/^[a-z0-9.-]{3,32}$/.test(value)) {
       loginFeedback.textContent = t('invalidUsername');
       loginFeedback.className = 'feedback bad';
       return;
     }
-    username = setStoredUsername(value);
-    loginFeedback.textContent = '';
-    showLoggedIn();
+    if (!postingKey) {
+      loginFeedback.textContent = t('invalidPostingKey');
+      loginFeedback.className = 'feedback bad';
+      return;
+    }
+
+    const loginButton = $('loginButton');
+    loginButton.disabled = true;
+    loginFeedback.textContent = t('verifying');
+    loginFeedback.className = 'feedback';
+    try {
+      await verifyPostingKey(value, postingKey);
+      username = setStoredUsername(value);
+      postingKeyInput.value = '';
+      loginFeedback.textContent = '';
+      showLoggedIn();
+    } catch (error) {
+      console.error('Steem login verification failed:', error);
+      username = null;
+      loginFeedback.textContent = error?.message?.includes('account not found') ? error.message : t('invalidPostingKey');
+      loginFeedback.className = 'feedback bad';
+    } finally {
+      loginButton.disabled = false;
+    }
   });
 
   logout.addEventListener('click', () => {
@@ -197,7 +223,7 @@ function startApplication() {
   }));
 
   applyCurrentLanguage();
-  if (username) showLoggedIn(); else showLoggedOut();
+  showLoggedOut();
 }
 
 bootstrap();
