@@ -1,17 +1,18 @@
 <header class="topbar">
-  <a class="brand" href="./" aria-label="Steem Flags home">🚩 <span>Steem Flags</span></a>
+  <a class="brand" href="./" aria-label="Steem Flags home">🚩 <span data-i18n="loginTitle">Steem Flags</span></a>
   <div class="stats">
     <span>⚡ Energy <b id="energyValue">3</b></span>
     <span>🪙 SF <b id="sfValue">0</b></span>
     <span id="streakLabel">🔥 0</span>
+    <label class="languagePicker" for="languageSelect"><span class="srOnly">Language</span><select id="languageSelect" aria-label="Language"><option value="en">English</option><option value="fa">فارسی</option><option value="es">Español</option></select></label>
   </div>
   <button id="menuButton" class="iconButton" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">☰</button>
 </header>
 
 <aside id="menu" class="menu" hidden>
-  <button type="button" data-action="home">Home</button>
-  <button type="button" data-action="reset">Reset local game</button>
-  <button type="button" data-action="logout" hidden>Logout</button>
+  <button type="button" data-action="home" data-i18n="home">Home</button>
+  <button type="button" data-action="reset" data-i18n="reset">Reset local game</button>
+  <button type="button" data-action="logout" data-i18n="logout" hidden>Logout</button>
   <a href="docs/ARCHITECTURE.md">Architecture</a>
   <a href="docs/ROADMAP.md">Roadmap</a>
 </aside>
@@ -19,22 +20,22 @@
 <main class="appShell">
   <section id="loginView" class="card hero">
     <p class="eyebrow">STEEM FLAGS</p>
-    <h1>Welcome</h1>
-    <p class="muted">Enter your Steem username to continue.</p>
+    <h1 data-i18n="loginTitle">Steem Flags</h1>
+    <p class="muted" data-i18n="loginPrompt">Enter your Steem username to continue.</p>
     <form id="loginForm">
-      <label for="usernameInput">Steem username</label>
+      <label for="usernameInput" data-i18n="usernameLabel">Steem username</label>
       <input id="usernameInput" name="username" autocomplete="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9.-]{3,32}" required>
-      <button id="loginButton" class="primary" type="submit">Login</button>
+      <button id="loginButton" class="primary" type="submit" data-i18n="login">Login</button>
     </form>
     <p id="loginFeedback" class="feedback" role="status" aria-live="polite"></p>
   </section>
 
   <section id="homeView" class="card hero" hidden>
     <p class="eyebrow">GUESS THE FLAG</p>
-    <h1>How well do you know the world?</h1>
+    <h1 data-i18n="welcome">How well do you know the world?</h1>
     <p id="loggedInUser" class="muted"></p>
-    <p class="muted">Choose the correct country. Correct answers earn <strong>+1 SF</strong>; wrong answers cost <strong>1 SF</strong>.</p>
-    <button id="startButton" class="primary" type="button">Start Game</button>
+    <p class="muted" data-i18n="gameRule">Choose the correct country. Correct answers earn <strong>+1 SF</strong>; wrong answers cost <strong>1 SF</strong>.</p>
+    <button id="startButton" class="primary" type="button" data-i18n="startGame">Start Game</button>
     <div id="progressSummary" class="progressSummary" hidden></div>
   </section>
 
@@ -46,10 +47,10 @@
     <div class="flagWrap">
       <div id="flagImage" class="flag" role="img" aria-label="Country flag"></div>
     </div>
-    <h2 id="questionText">Which country does this flag belong to?</h2>
+    <h2 id="questionText" data-i18n="whichCountry">Which country does this flag belong to?</h2>
     <div id="answers" class="answers"></div>
     <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
-    <button id="nextButton" class="secondary" type="button" hidden>Next question</button>
+    <button id="nextButton" class="secondary" type="button" data-i18n="nextQuestion" hidden>Next question</button>
   </section>
 </main>
 
