@@ -1,4 +1,4 @@
-import { COUNTRIES } from './data/countries.js';
+import { COUNTRIES } from '../data/countries.js';
 
 const shuffle = (items) => [...items].sort(() => Math.random() - 0.5);
 
@@ -22,7 +22,6 @@ export class FlagGame {
       this.used.clear();
       pool = COUNTRIES;
     }
-
     const country = pool[Math.floor(Math.random() * pool.length)];
     this.used.add(country[0]);
     const wrong = shuffle(COUNTRIES.filter(([name]) => name !== country[0])).slice(0, 3);
@@ -36,11 +35,6 @@ export class FlagGame {
     const correct = name === this.current.country[0];
     this.score = Math.max(0, this.score + (correct ? 1 : -1));
     this.streak = correct ? this.streak + 1 : 0;
-    return {
-      correct,
-      answer: this.current.country[0],
-      score: this.score,
-      streak: this.streak
-    };
+    return { correct, answer: this.current.country[0], score: this.score, streak: this.streak };
   }
 }
