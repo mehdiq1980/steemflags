@@ -18,6 +18,12 @@ test('a session completes after 20 answers', () => {
   assert.equal(session.points, 20);
 });
 
+test('wrong answers subtract exactly one point', () => {
+  const session = startSession({ energy: 3 });
+  const next = recordAnswer(session, false);
+  assert.equal(next.points, -1);
+});
+
 test('energy cannot be consumed when empty', () => {
   assert.throws(() => consumeGameEnergy(0), /Not enough energy/);
 });
