@@ -15,18 +15,23 @@ const counter = $('questionCounter');
 const score = $('scoreLabel');
 const streak = $('streakLabel');
 const flag = $('flagImage');
+const start = $('startButton');
 
 const game = new FlagGame(renderQuestion);
+let answered = false;
 
 function renderStats() {
   energy.textContent = state.energy;
   sf.textContent = state.sf;
+  start.disabled = state.energy <= 0;
+  start.textContent = state.energy > 0 ? 'Start Game' : 'No Energy — Come Back Tomorrow';
 }
 
 function renderQuestion(question, points, number, currentStreak) {
+  answered = false;
   counter.textContent = `Question ${number}`;
   score.textContent = `Score: ${points}`;
-  if (streak) streak.textContent = `🔥 ${currentStreak}`;
+  streak.textContent = `🔥 ${currentStreak}`;
   flag.textContent = question.country[1];
   flag.setAttribute('aria-label', `${question.country[0]} flag`);
   answers.replaceChildren();
@@ -39,18 +44,14 @@ function renderQuestion(question, points, number, currentStreak) {
     button.type = 'button';
     button.className = 'answer';
     button.textContent = name;
-    button.addEventListener('click', () => choose(button, name), { once: true });
+    button.addEventListener('click', () => choose(button, name));
     answers.appendChild(button);
   });
 }
 
 function choose(button, name) {
-  if (state.energy <= 0) {
-    feedback.textContent = 'No energy left today.';
-    feedback.className = 'feedback bad';
-    return;
-  }
-
+  if (answered || state.energy <= 0) return;
+  answered = true;
   state.energy -= 1;
   const result = game.answer(name);
 
@@ -78,23 +79,20 @@ function choose(button, name) {
 
 function startGame() {
   state = refreshDailyEnergy(loadState());
-  if (state.energy <= 0) {
-    feedback.textContent = 'No energy left today. Come back tomorrow.';
-    feedback.className = 'feedback bad';
-    return;
-  }
+  renderStats();
+  if (state.energy <= 0) return;
   game.reset();
   home.hidden = true;
   gameView.hidden = false;
   game.next();
 }
 
-$('startButton').addEventListener('click', startGame);
+start.addEventListener('click', startGame);
 
 next.addEventListener('click', () => {
   if (state.energy > 0) game.next();
   else {
-    feedback.textContent = 'No energy left today.';
+    feedback.textContent = 'No energy left today. Come back tomorrow.';
     feedback.className = 'feedback bad';
     next.hidden = true;
   }
@@ -111,6 +109,7 @@ document.querySelectorAll('[data-action="home"]').forEach((button) => {
     gameView.hidden = true;
     home.hidden = false;
     $('menu').hidden = true;
+    renderStats();
   });
 });
 
