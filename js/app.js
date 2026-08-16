@@ -4,6 +4,7 @@ import {
 } from './storage.js';
 import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
+import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 
 const COMPONENTS = { appShell: './components/app-shell.html' };
 const $ = (id) => document.getElementById(id);
@@ -35,17 +36,25 @@ function startApplication() {
   const start = $('startButton'), progressSummary = $('progressSummary'), menu = $('menu'), menuButton = $('menuButton');
   const loginForm = $('loginForm'), usernameInput = $('usernameInput'), loginFeedback = $('loginFeedback');
   const loggedInUser = $('loggedInUser'), logout = document.querySelector('[data-action="logout"]');
+  const languageSelect = $('languageSelect');
   const game = new FlagGame(renderQuestion);
   let answered = false;
+
+  function applyCurrentLanguage() {
+    const language = getLanguage();
+    applyLanguage(document, language);
+    languageSelect.value = language;
+    renderStats();
+  }
 
   function renderStats() {
     energy.textContent = state.energy;
     sf.textContent = state.sf;
     start.disabled = !username || state.energy <= 0;
-    start.textContent = state.energy > 0 ? 'Start Game' : 'No Energy — Come Back Tomorrow';
+    start.textContent = state.energy > 0 ? t('startGame') : t('noEnergy');
     progressSummary.hidden = false;
-    progressSummary.textContent = `Games: ${progress.games} · Accuracy: ${accuracy(progress)}% · Best streak: ${progress.bestStreak}`;
-    loggedInUser.textContent = username ? `Logged in as @${username}` : '';
+    progressSummary.textContent = `${t('gamesLabel', getLanguage())}: ${progress.games} · ${t('accuracyLabel', getLanguage())}: ${accuracy(progress)}% · ${t('bestStreakLabel', getLanguage())}: ${progress.bestStreak}`;
+    loggedInUser.textContent = username ? `${t('loggedInAs')} @${username}` : '';
   }
 
   function showLoggedOut() {
@@ -56,6 +65,7 @@ function startApplication() {
     menu.hidden = true;
     usernameInput.value = '';
     usernameInput.focus();
+    renderStats();
   }
 
   function showLoggedIn() {
@@ -69,8 +79,8 @@ function startApplication() {
 
   function renderQuestion(question, points, number, currentStreak) {
     answered = false;
-    counter.textContent = `Question ${number} of ${game.totalQuestions}`;
-    score.textContent = `Score: ${points}`;
+    counter.textContent = `${t('question')} ${number} ${t('of')} ${game.totalQuestions}`;
+    score.textContent = `${t('score')}: ${points}`;
     streak.textContent = `🔥 ${currentStreak}`;
     flag.textContent = question.country[1];
     flag.setAttribute('aria-label', `${question.country[0]} flag`);
@@ -96,12 +106,12 @@ function startApplication() {
     progress = recordAnswer(progress, result.correct, result.streak);
     if (result.correct) {
       state.sf += 1;
-      feedback.textContent = `Correct! +1 SF${result.streak > 1 ? ` · ${result.streak} streak` : ''}`;
+      feedback.textContent = `${t('correct')} +1 SF${result.streak > 1 ? ` · ${result.streak} streak` : ''}`;
       feedback.className = 'feedback ok';
       button.classList.add('correct');
     } else {
       state.sf -= 1;
-      feedback.textContent = `Wrong. Correct answer: ${result.answer}`;
+      feedback.textContent = `${t('wrong')} ${result.answer}`;
       feedback.className = 'feedback bad';
       button.classList.add('wrong');
     }
@@ -135,7 +145,7 @@ function startApplication() {
     event.preventDefault();
     const value = usernameInput.value.trim().toLowerCase();
     if (!/^[a-z0-9.-]{3,32}$/.test(value)) {
-      loginFeedback.textContent = 'Enter a valid Steem username.';
+      loginFeedback.textContent = t('invalidUsername');
       loginFeedback.className = 'feedback bad';
       return;
     }
@@ -153,12 +163,20 @@ function startApplication() {
     showLoggedOut();
   });
 
+  languageSelect.addEventListener('change', () => {
+    setLanguage(languageSelect.value);
+    applyCurrentLanguage();
+    if (!gameView.hidden && game.currentQuestion) {
+      renderQuestion(game.currentQuestion, game.points, game.questionNumber, game.streak);
+    }
+  });
+
   start.addEventListener('click', startGame);
   next.addEventListener('click', () => {
     if (game.isComplete()) {
       gameView.hidden = true;
       home.hidden = false;
-      feedback.textContent = 'Game complete!';
+      feedback.textContent = t('gameComplete');
       renderStats();
       return;
     }
@@ -178,6 +196,7 @@ function startApplication() {
     gameView.hidden = true; home.hidden = false; menu.hidden = true; menuButton.setAttribute('aria-expanded', 'false');
   }));
 
+  applyCurrentLanguage();
   if (username) showLoggedIn(); else showLoggedOut();
 }
 
