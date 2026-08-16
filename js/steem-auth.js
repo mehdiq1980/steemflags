@@ -1,4 +1,58 @@
 const STEEM_RPC = 'https://api.steemit.com';
-function getClient(){if(!window.dsteem?.Client||!window.dsteem?.PrivateKey)throw new Error('AUTH_LIBRARY_UNAVAILABLE');return new window.dsteem.Client(STEEM_RPC)}
-const norm=v=>String(v||'').trim();
-export async function verifyPostingKey(username,postingKey){const client=getClient();const accountName=norm(username).toLowerCase();const value=norm(postingKey);if(!value)throw new Error('POSTING_KEY_EMPTY');let key;try{key=window.dsteem.PrivateKey.fromString(value)}catch{throw new Error('POSTING_KEY_FORMAT')}const publicKey=norm(key.createPublic().toString());let accounts;try{accounts=await client.database.getAccounts([accountName])}catch(error){console.error('Steem account lookup failed:',error);throw new Error('STEEM_RPC_UNAVAILABLE')}const account=accounts?.[0];if(!account)throw new Error('ACCOUNT_NOT_FOUND');const keyAuths=Array.isArray(account.posting?.key_auths)?account.posting.key_auths:[];const authorized=keyAuths.some(entry=>norm(Array.isArray(entry)?entry[0]:entry?.key)===publicKey);if(!authorized){const error=new Error('POSTING_KEY_UNAUTHORIZED');error.publicKey=publicKey;error.postingKeys=keyAuths.map(entry=>Array.isArray(entry)?entry[0]:entry?.key).filter(Boolean);throw error}return{username:account.name,publicKey}}
+
+function getDsteem() {
+  const lib = globalThis.dsteem;
+  if (!lib?.Client || !lib?.PrivateKey) throw new Error('AUTH_LIBRARY_UNAVAILABLE');
+  return lib;
+}
+
+function normalizeKey(value) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+export async function verifyPostingKey(username, postingKey) {
+  const dsteem = getDsteem();
+  const accountName = String(username ?? '').trim().toLowerCase();
+  const value = String(postingKey ?? '').trim();
+  if (!value) throw new Error('POSTING_KEY_EMPTY');
+
+  let privateKey;
+  try {
+    privateKey = dsteem.PrivateKey.fromString(value);
+  } catch (error) {
+    console.error('Posting key parsing failed:', error);
+    throw new Error('POSTING_KEY_FORMAT');
+  }
+
+  const derivedPublicKey = normalizeKey(privateKey.createPublic().toString());
+  const client = new dsteem.Client(STEEM_RPC);
+
+  let accounts;
+  try {
+    accounts = await client.database.getAccounts([accountName]);
+  } catch (error) {
+    console.error('Steem RPC account lookup failed:', error);
+    throw new Error('STEEM_RPC_UNAVAILABLE');
+  }
+
+  const account = accounts?.[0];
+  if (!account) throw new Error('ACCOUNT_NOT_FOUND');
+
+  const authority = account.posting;
+  const keyAuths = Array.isArray(authority?.key_auths) ? authority.key_auths : [];
+  const threshold = Number(authority?.weight_threshold ?? 1);
+  const matchingWeight = keyAuths.reduce((sum, entry) => {
+    const key = Array.isArray(entry) ? entry[0] : entry?.key;
+    const weight = Number(Array.isArray(entry) ? entry[1] : entry?.weight ?? 0);
+    return normalizeKey(key) === derivedPublicKey ? sum + weight : sum;
+  }, 0);
+
+  // A posting key is authorized only when its weight can satisfy the
+  // posting authority threshold. This also supports accounts with
+  // multiple posting keys instead of treating mere key presence as enough.
+  if (matchingWeight < threshold) {
+    throw new Error('POSTING_KEY_UNAUTHORIZED');
+  }
+
+  return { username: account.name, publicKey: privateKey.createPublic().toString() };
+}
