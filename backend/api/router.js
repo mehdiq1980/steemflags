@@ -1,6 +1,7 @@
 import { walletView } from '../services/wallet.js';
 import { startSession, recordAnswer } from '../services/game-session.js';
 import { validateReferral, rewardAmount } from '../services/referral.js';
+import { authorizeUser } from '../auth/authorization.js';
 
 export function createRouter(deps = {}) {
   const { db, requireUser, getQuestion } = deps;
@@ -9,11 +10,13 @@ export function createRouter(deps = {}) {
   return {
     async wallet(request) {
       const user = await requireUser(request);
+      authorizeUser(request.session, user.id);
       return walletView(user);
     },
 
     async startGame(request) {
       const user = await requireUser(request);
+      authorizeUser(request.session, user.id);
       const session = startSession(user);
       return db.transaction(async (tx) => {
         const saved = await tx.createGameSession(user.id, session);
@@ -25,7 +28,9 @@ export function createRouter(deps = {}) {
 
     async answer(request) {
       const user = await requireUser(request);
+      authorizeUser(request.session, user.id);
       const session = await db.getGameSession(request.params.sessionId, user.id);
+      if (!session || String(session.user_id) !== String(user.id)) throw new Error('Forbidden');
       const question = await db.getQuestion(session.question_id);
       const next = recordAnswer(session, request.body?.answer === question.answer);
       return db.transaction(async (tx) => {
@@ -37,6 +42,7 @@ export function createRouter(deps = {}) {
 
     async claimReferral(request) {
       const user = await requireUser(request);
+      authorizeUser(request.session, user.id);
       const inviter = await db.findUserByReferralCode(request.body?.code);
       validateReferral({ inviterId: inviter?.id, inviteeId: user.id, existingReferral: await db.findReferralByInvitee(user.id) });
       return db.transaction(async (tx) => {
