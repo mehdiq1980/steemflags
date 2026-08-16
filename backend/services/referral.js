@@ -1,4 +1,4 @@
-export const REFERRAL_REWARD = 5;
+export const REFERRAL_REWARD = 10;
 
 export function normalizeCode(code) {
   return String(code ?? '').trim().toLowerCase();
