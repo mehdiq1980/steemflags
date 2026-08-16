@@ -11,14 +11,28 @@
 <aside id="menu" class="menu" hidden>
   <button type="button" data-action="home">Home</button>
   <button type="button" data-action="reset">Reset local game</button>
+  <button type="button" data-action="logout" hidden>Logout</button>
   <a href="docs/ARCHITECTURE.md">Architecture</a>
   <a href="docs/ROADMAP.md">Roadmap</a>
 </aside>
 
 <main class="appShell">
-  <section id="homeView" class="card hero">
+  <section id="loginView" class="card hero">
+    <p class="eyebrow">STEEM FLAGS</p>
+    <h1>Welcome</h1>
+    <p class="muted">Enter your Steem username to continue.</p>
+    <form id="loginForm">
+      <label for="usernameInput">Steem username</label>
+      <input id="usernameInput" name="username" autocomplete="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9.-]{3,32}" required>
+      <button id="loginButton" class="primary" type="submit">Login</button>
+    </form>
+    <p id="loginFeedback" class="feedback" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="homeView" class="card hero" hidden>
     <p class="eyebrow">GUESS THE FLAG</p>
     <h1>How well do you know the world?</h1>
+    <p id="loggedInUser" class="muted"></p>
     <p class="muted">Choose the correct country. Correct answers earn <strong>+1 SF</strong>; wrong answers cost <strong>1 SF</strong>.</p>
     <button id="startButton" class="primary" type="button">Start Game</button>
     <div id="progressSummary" class="progressSummary" hidden></div>
