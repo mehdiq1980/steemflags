@@ -2,6 +2,8 @@ import { walletView } from '../services/wallet.js';
 import { startSession, recordAnswer } from '../services/game-session.js';
 import { validateReferral, rewardAmount } from '../services/referral.js';
 import { authorizeUser } from '../auth/authorization.js';
+import { validateAnswerInput, validateSessionId } from '../validation/game-input.js';
+import { validateReferralCode } from '../validation/referral-input.js';
 
 export function createRouter(deps = {}) {
   const { db, requireUser, getQuestion } = deps;
@@ -29,10 +31,13 @@ export function createRouter(deps = {}) {
     async answer(request) {
       const user = await requireUser(request);
       authorizeUser(request.session, user.id);
-      const session = await db.getGameSession(request.params.sessionId, user.id);
+      const sessionId = validateSessionId(request.params.sessionId);
+      const answer = validateAnswerInput(request.body);
+      const session = await db.getGameSession(sessionId, user.id);
       if (!session || String(session.user_id) !== String(user.id)) throw new Error('Forbidden');
       const question = await db.getQuestion(session.question_id);
-      const next = recordAnswer(session, request.body?.answer === question.answer);
+      if (!question) throw new Error('Question not found');
+      const next = recordAnswer(session, answer === question.answer);
       return db.transaction(async (tx) => {
         await tx.updateGameSession(session.id, next);
         await tx.recordSFDifference(user.id, next.points - session.points);
@@ -43,7 +48,8 @@ export function createRouter(deps = {}) {
     async claimReferral(request) {
       const user = await requireUser(request);
       authorizeUser(request.session, user.id);
-      const inviter = await db.findUserByReferralCode(request.body?.code);
+      const code = validateReferralCode(request.body?.code);
+      const inviter = await db.findUserByReferralCode(code);
       validateReferral({ inviterId: inviter?.id, inviteeId: user.id, existingReferral: await db.findReferralByInvitee(user.id) });
       return db.transaction(async (tx) => {
         await tx.createReferral(inviter.id, user.id);
