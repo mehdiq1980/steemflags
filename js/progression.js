@@ -1,8 +1,13 @@
-const KEY = 'steemflags.progress.v1';
+const PREFIX = 'steemflags.progress.v1';
 const DEFAULTS = { games: 0, correct: 0, questions: 0, bestStreak: 0 };
 
-export function loadProgress() {
-  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; }
+function key(username) {
+  return `${PREFIX}_${encodeURIComponent(String(username).trim().toLowerCase())}`;
+}
+
+export function loadProgress(username) {
+  if (!username) return { ...DEFAULTS };
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(key(username)) || '{}') }; }
   catch { return { ...DEFAULTS }; }
 }
 
@@ -18,8 +23,9 @@ export function recordGame(progress) {
   return progress;
 }
 
-export function saveProgress(progress) {
-  localStorage.setItem(KEY, JSON.stringify(progress));
+export function saveProgress(progress, username) {
+  if (!username) throw new Error('Login required');
+  localStorage.setItem(key(username), JSON.stringify(progress));
 }
 
 export function accuracy(progress) {
