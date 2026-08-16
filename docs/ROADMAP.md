@@ -3,7 +3,7 @@
 ## Foundation
 - [x] Repository established
 - [x] Architecture/source-of-truth documentation
-- [ ] Refactor legacy monolithic frontend
+- [x] Refactor legacy monolithic frontend: `index.html` is now a minimal entry point and UI markup lives in `components/app-shell.html`
 
 ## Backend and game data
 - [ ] PostgreSQL migrations
@@ -21,8 +21,10 @@
 - [ ] STEEM reward distribution
 
 ## Frontend
-- [ ] Modular CSS/JS
-- [ ] Hamburger navigation
+- [x] Modular application bootstrap
+- [x] Component-based application shell
+- [ ] Modular CSS/JS expansion
+- [x] Hamburger navigation foundation
 - [ ] Wallet
 - [ ] Leaderboard
 - [ ] Referral
