@@ -22,6 +22,33 @@ export class FlagGame {
     return this.completed || this.questionNumber >= this.totalQuestions;
   }
 
+  hasProgress() {
+    return this.questionNumber > 0 && !this.completed && !!this.current;
+  }
+
+  serialize() {
+    return {
+      questionNumber: this.questionNumber,
+      score: this.score,
+      current: this.current,
+      used: [...this.used],
+      answered: this.answered,
+      completed: this.completed,
+      totalQuestions: this.totalQuestions
+    };
+  }
+
+  restore(snapshot) {
+    if (!snapshot || !snapshot.current || snapshot.completed) return false;
+    this.questionNumber = Number(snapshot.questionNumber) || 0;
+    this.score = Number(snapshot.score) || 0;
+    this.current = snapshot.current;
+    this.used = new Set(Array.isArray(snapshot.used) ? snapshot.used : []);
+    this.answered = Boolean(snapshot.answered);
+    this.completed = false;
+    return this.hasProgress();
+  }
+
   next() {
     if (this.isComplete() || (this.current && !this.answered)) return;
     let pool = COUNTRIES.filter(([name]) => !this.used.has(name));
