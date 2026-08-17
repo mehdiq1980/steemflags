@@ -1,6 +1,7 @@
 const PREFIX = 'steemflags.state.v2';
 const USER_KEY = 'steemflags.username';
-const defaults = { sf: 0, energy: 30, lastEnergyDay: null };
+const DAILY_ENERGY = 30;
+const defaults = { sf: 0, energy: DAILY_ENERGY, lastEnergyDay: null, energyVersion: DAILY_ENERGY };
 
 function key(username) {
   return `${PREFIX}_${encodeURIComponent(String(username).trim().toLowerCase())}`;
@@ -23,7 +24,15 @@ export function clearStoredUsername() {
 export function loadState(username = getStoredUsername()) {
   if (!username) return { ...defaults };
   try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(key(username)) || '{}') };
+    const stored = JSON.parse(localStorage.getItem(key(username)) || '{}');
+    // One-time migration: existing accounts created with the old 3-energy cap
+    // receive the new temporary 30-energy daily allocation without losing SF.
+    if (stored.energyVersion !== DAILY_ENERGY) {
+      const migrated = { ...defaults, ...stored, energy: DAILY_ENERGY, energyVersion: DAILY_ENERGY };
+      localStorage.setItem(key(username), JSON.stringify(migrated));
+      return migrated;
+    }
+    return { ...defaults, ...stored };
   } catch {
     return { ...defaults };
   }
@@ -31,7 +40,7 @@ export function loadState(username = getStoredUsername()) {
 
 export function saveState(state, username = getStoredUsername()) {
   if (!username) throw new Error('Login required');
-  localStorage.setItem(key(username), JSON.stringify(state));
+  localStorage.setItem(key(username), JSON.stringify({ ...state, energyVersion: DAILY_ENERGY }));
 }
 
 export function resetState(username = getStoredUsername()) {
@@ -49,8 +58,13 @@ function localDay() {
 export function refreshDailyEnergy(state, username = getStoredUsername()) {
   const day = localDay();
   if (state.lastEnergyDay !== day) {
-    state.energy = 30;
+    state.energy = DAILY_ENERGY;
     state.lastEnergyDay = day;
+    state.energyVersion = DAILY_ENERGY;
+    if (username) saveState(state, username);
+  } else if (state.energyVersion !== DAILY_ENERGY) {
+    state.energy = DAILY_ENERGY;
+    state.energyVersion = DAILY_ENERGY;
     if (username) saveState(state, username);
   }
   return state;
