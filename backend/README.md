@@ -1,14 +1,17 @@
-# Steem Flags backend
+# Steem Flags global leaderboard API
 
-The backend is the authoritative boundary for SF, Energy, game sessions, referrals and future reward distribution.
+The backend is the authoritative boundary for the global SF leaderboard. All backend code stays in this GitHub repository; deployment is separate from source control.
 
-## Rules
+## Environment
 
-- Never trust client-provided SF or Energy balances.
-- A game consumes exactly one Energy when a valid session starts.
-- A completed game contains exactly 20 questions.
-- SF mutations must be recorded in `sf_transactions`.
-- Energy mutations must be recorded in `energy_transactions`.
-- PostgreSQL is the source of truth; browser `localStorage` is only a temporary/offline presentation cache.
+- `DATABASE_URL` — PostgreSQL connection string
+- `DATABASE_SSL` — optional; set to `false` only for local PostgreSQL
+- `PORT` — optional, defaults to `3000`
 
-The API implementation will be added incrementally without putting database credentials or private keys in the frontend.
+## Endpoints
+
+- `GET /health`
+- `GET /api/leaderboard?limit=10`
+- `POST /api/leaderboard` with `{ "username": "alice", "sf": 12 }`
+
+The database is the shared source of truth. Browser `localStorage` is not used as the global leaderboard database.
