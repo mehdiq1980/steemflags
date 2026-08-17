@@ -2,7 +2,7 @@ import { t } from './i18n.js';
 
 const root = document.getElementById('leaderboard');
 const AVATAR_RPC = 'https://api.steemit.com';
-const API_BASE = String(window.STEEM_FLAGS_API_URL || '').replace(/\/$/, '');
+const API_BASE = String(window.STEEM_FLAGS_API_URL || window.location.origin).replace(/\/$/, '');
 
 function avatarUrl(username) { return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`; }
 function render(rows) {
@@ -17,7 +17,6 @@ async function loadAvatars(rows) {
   try { const response = await fetch(AVATAR_RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'condenser_api.get_accounts', params: [usernames] }), cache: 'no-store' }); if (!response.ok) return rows; const payload = await response.json(); const accounts = new Map((payload.result || []).map(account => [account.name, account])); return rows.map(row => { const account = accounts.get(row.username); const metadata = account?.json_metadata ? (() => { try { return JSON.parse(account.json_metadata); } catch { return {}; } })() : {}; const profile = metadata.profile || {}; return { ...row, avatar: profile.profile_image || avatarUrl(row.username) }; }); } catch (error) { console.warn('Steem avatar lookup failed:', error); return rows; }
 }
 async function loadLeaderboard() {
-  if (!API_BASE) { root.innerHTML = `<h2>${t('leaderboardTitle')}</h2><p class="muted">Global leaderboard API is not configured yet.</p>`; return; }
   const endpoint = `${API_BASE}/api/leaderboard?limit=10`;
   try { const response = await fetch(endpoint, { cache: 'no-store' }); if (!response.ok) throw new Error(`Leaderboard HTTP ${response.status}`); const payload = await response.json(); const rows = Array.isArray(payload) ? payload : (payload.leaderboard ?? payload.rows ?? []); render(await loadAvatars(rows)); } catch (error) { console.warn('Steem Flags leaderboard unavailable:', error); root.innerHTML = `<h2>${t('leaderboardTitle')}</h2><p class="muted">${t('leaderboardUnavailable')}</p>`; }
 }
