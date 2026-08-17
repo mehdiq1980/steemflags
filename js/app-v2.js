@@ -9,7 +9,7 @@ const gameStateKey = (username) => `${GAME_STATE_PREFIX}${encodeURIComponent(Str
 function loadIncompleteGame(username){if(!username)return null;try{return JSON.parse(localStorage.getItem(gameStateKey(username))||'null')}catch{return null}}
 function saveIncompleteGame(username,game){if(username&&game.hasProgress())localStorage.setItem(gameStateKey(username),JSON.stringify(game.serialize()))}
 function clearIncompleteGame(username){if(username)localStorage.removeItem(gameStateKey(username))}
-async function loadComponent(){const r=await fetch(`./components/app-shell.html?v=20260817-18`,{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
+async function loadComponent(){const r=await fetch(`./components/app-shell.html?v=20260817-19`,{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
 async function loadLeaderboard(){try{await import(`./leaderboard.js?v=${Date.now()}`)}catch(e){console.warn('Leaderboard failed',e)}}
 async function fetchSteemBalance(account){for(const endpoint of ['https://api.steemit.com','https://api.steem.house']){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[account]]})});const p=await r.json();const b=p?.result?.[0]?.balance;if(typeof b==='string')return b.replace(/\s*STEEM\s*$/i,'').trim()}catch{}}return '—'}
 async function bootstrap(){try{$('app').innerHTML=await loadComponent();await loadLeaderboard();start()}catch(e){console.error(e)}}
