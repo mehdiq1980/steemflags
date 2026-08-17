@@ -2,30 +2,11 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#080d1a"><meta name="description" content="Earn more SF in Steem Flags."><meta name="application-name" content="Steem Flags"><title>Earn more SF</title>
-<link rel="stylesheet" href="css/style.css?v=20260817-21">
-</head>
-<body>
-<header class="topbar">
-<button id="menuButton" class="iconButton" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">☰</button>
-<a class="brand" href="./" aria-label="Steem Flags home"><img class="gameLogo logoSmall" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags"></a>
-<div id="assetStats" class="stats"><span class="asset"><span class="assetIcon">⚡</span> Energy <b id="energyValue">—</b></span><span class="asset sfAsset"><img class="sfLogo" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="SF"><span class="assetLabel">SF</span> <b id="sfValue">—</b> <a href="./earnsf.html" class="earnSfLink" aria-label="Earn more SF" title="Earn more SF" style="color:#22c55e!important;font-weight:900;font-size:1.25em;text-decoration:none;margin-left:3px;line-height:1;">+</a></span><span class="asset steemAsset"><img class="steemLogo" src="https://s2.coinmarketcap.com/static/img/coins/64x64/1230.png" alt="Steem"><span>STEEM</span> <b id="steemValue">—</b></span></div>
-</header>
+<link rel="stylesheet" href="css/style.css?v=20260817-22">
+<style>.earnSfLink{color:#22c55e!important;font-weight:900;font-size:1.25em;text-decoration:none;margin:0!important;padding:0!important;line-height:1;display:inline-block}.earnSfLink:visited,.earnSfLink:hover,.earnSfLink:active{color:#22c55e!important;text-decoration:none}</style>
+</head><body>
+<header class="topbar"><button id="menuButton" class="iconButton" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">☰</button><a class="brand" href="./" aria-label="Steem Flags home"><img class="gameLogo logoSmall" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags"></a><div id="assetStats" class="stats"><span class="asset"><span class="assetIcon">⚡</span> Energy <b id="energyValue">—</b></span><span class="asset sfAsset"><img class="sfLogo" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="SF"><span class="assetLabel">SF</span> <b id="sfValue">—</b><a href="./earnsf.html" class="earnSfLink" aria-label="Earn more SF" title="Earn more SF">+</a></span><span class="asset steemAsset"><img class="steemLogo" src="https://s2.coinmarketcap.com/static/img/coins/64x64/1230.png" alt="Steem"><span>STEEM</span> <b id="steemValue">—</b></span></div></header>
 <aside id="menu" class="menu" hidden><label class="menuLanguage" for="languageSelect"><span data-i18n="language">Language</span><select id="languageSelect" aria-label="Language"><option value="en">English</option><option value="fa">فارسی</option><option value="es">Español</option></select></label><button type="button" data-action="home" data-i18n="home">Home</button><button type="button" data-action="reset" data-i18n="reset">Reset Game</button><button type="button" data-action="logout" data-i18n="logout">Logout</button><a href="docs/ARCHITECTURE.md">Architecture</a><a href="docs/ROADMAP.md">Roadmap</a></aside>
-<main class="appShell"><section class="card hero"><img class="gameLogo logoMedium" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags logo"><h1>Earn more SF</h1><p class="muted">Complete games and answer flags correctly to earn SF.</p><a class="primary" href="./">Play Steem Flags</a></section></main>
-<footer><span>Developed by</span> <a href="https://allmylinks.com/mehdiq1980" target="_blank" rel="noopener noreferrer">Mehdi Q.</a></footer>
-<script type="module">
-import {loadState,refreshDailyEnergy,getStoredUsername,clearStoredUsername} from './js/storage.js';
-import {applyLanguage,getLanguage,setLanguage} from './js/i18n.js';
-const $=id=>document.getElementById(id); const username=getStoredUsername();
-if(username){const s=refreshDailyEnergy(loadState(username),username);$('energyValue').textContent=s.energy;$('sfValue').textContent=s.sf;}
-else{$('assetStats').hidden=true;$('logoutMenu').hidden=true;}
-applyLanguage(document,getLanguage());
-$('languageSelect').value=getLanguage();$('languageSelect').addEventListener('change',e=>{setLanguage(e.target.value);applyLanguage(document,e.target.value)});
-$('menuButton').onclick=()=>{const m=$('menu');m.hidden=!m.hidden;$('menuButton').setAttribute('aria-expanded',String(!m.hidden))};
-document.querySelector('[data-action="home"]').onclick=()=>location.href='./';
-document.querySelector('[data-action="reset"]').onclick=()=>location.href='./';
-$('logoutMenu').onclick=()=>{clearStoredUsername();location.href='./'};
-async function fetchSteem(account){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[account]]});for(const endpoint of ['https://api.steemit.com','https://api.steem.house','https://api.steemyy.com','https://api.steemworld.org']){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)continue;const p=await r.json();const b=p?.result?.[0]?.balance;if(typeof b==='string')return b.replace(/\s*STEEM\s*$/i,'').trim()}catch{}}return null}
-if(username){const b=await fetchSteem(username);if(b!==null)$('steemValue').textContent=b;}
-</script>
+<main class="appShell"><section class="card hero"><img class="gameLogo logoMedium" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags logo"><h1>Earn more SF</h1><p class="muted">Complete games and answer flags correctly to earn SF.</p><a class="primary" href="./">Play Steem Flags</a></section></main><footer><span>Developed by</span> <a href="https://allmylinks.com/mehdiq1980" target="_blank" rel="noopener noreferrer">Mehdi Q.</a></footer>
+<script type="module">import{loadState,refreshDailyEnergy,getStoredUsername,clearStoredUsername}from'./js/storage.js';import{applyLanguage,getLanguage,setLanguage}from'./js/i18n.js';const $=id=>document.getElementById(id),username=getStoredUsername();if(username){const s=refreshDailyEnergy(loadState(username),username);$('energyValue').textContent=s.energy;$('sfValue').textContent=s.sf}else{$('assetStats').hidden=true;$('logoutMenu').hidden=true}applyLanguage(document,getLanguage());$('languageSelect').value=getLanguage();$('languageSelect').addEventListener('change',e=>{setLanguage(e.target.value);applyLanguage(document,e.target.value)});$('menuButton').onclick=()=>{const m=$('menu');m.hidden=!m.hidden;$('menuButton').setAttribute('aria-expanded',String(!m.hidden))};document.querySelector('[data-action="home"]').onclick=()=>location.href='./';document.querySelector('[data-action="reset"]').onclick=()=>location.href='./';$('logoutMenu').onclick=()=>{clearStoredUsername();location.href='./'};</script>
 </body></html>
