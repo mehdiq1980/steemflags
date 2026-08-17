@@ -1,7 +1,8 @@
 const PREFIX = 'steemflags.state.v2';
 const USER_KEY = 'steemflags.username';
 const DAILY_ENERGY = 30;
-const ENERGY_MIGRATION_VERSION = 31;
+// Temporary test configuration: reset each existing account once to the new 30-energy daily allowance.
+const ENERGY_MIGRATION_VERSION = 32;
 const defaults = { sf: 0, energy: DAILY_ENERGY, lastEnergyDay: null, energyVersion: ENERGY_MIGRATION_VERSION };
 
 function key(username) {
@@ -17,7 +18,7 @@ export function loadState(username = getStoredUsername()) {
   try {
     const stored = JSON.parse(localStorage.getItem(key(username)) || '{}');
     if (stored.energyVersion !== ENERGY_MIGRATION_VERSION) {
-      const migrated = { ...defaults, ...stored, energy: DAILY_ENERGY, energyVersion: ENERGY_MIGRATION_VERSION };
+      const migrated = { ...defaults, ...stored, energy: DAILY_ENERGY, lastEnergyDay: localDay(), energyVersion: ENERGY_MIGRATION_VERSION };
       localStorage.setItem(key(username), JSON.stringify(migrated));
       return migrated;
     }
