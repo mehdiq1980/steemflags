@@ -1,6 +1,6 @@
 const PREFIX = 'steemflags.state.v2';
 const USER_KEY = 'steemflags.username';
-const defaults = { sf: 0, energy: 3, lastEnergyDay: null };
+const defaults = { sf: 0, energy: 30, lastEnergyDay: null };
 
 function key(username) {
   return `${PREFIX}_${encodeURIComponent(String(username).trim().toLowerCase())}`;
@@ -49,7 +49,7 @@ function localDay() {
 export function refreshDailyEnergy(state, username = getStoredUsername()) {
   const day = localDay();
   if (state.lastEnergyDay !== day) {
-    state.energy = 3;
+    state.energy = 30;
     state.lastEnergyDay = day;
     if (username) saveState(state, username);
   }
