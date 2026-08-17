@@ -1,46 +1,33 @@
 const PREFIX = 'steemflags.state.v2';
 const USER_KEY = 'steemflags.username';
 const DAILY_ENERGY = 30;
-const defaults = { sf: 0, energy: DAILY_ENERGY, lastEnergyDay: null, energyVersion: DAILY_ENERGY };
+const ENERGY_MIGRATION_VERSION = 31;
+const defaults = { sf: 0, energy: DAILY_ENERGY, lastEnergyDay: null, energyVersion: ENERGY_MIGRATION_VERSION };
 
 function key(username) {
   return `${PREFIX}_${encodeURIComponent(String(username).trim().toLowerCase())}`;
 }
 
-export function getStoredUsername() {
-  return localStorage.getItem(USER_KEY) || null;
-}
-
-export function setStoredUsername(username) {
-  const value = String(username).trim().toLowerCase();
-  localStorage.setItem(USER_KEY, value);
-  return value;
-}
-
-export function clearStoredUsername() {
-  localStorage.removeItem(USER_KEY);
-}
+export function getStoredUsername() { return localStorage.getItem(USER_KEY) || null; }
+export function setStoredUsername(username) { const value = String(username).trim().toLowerCase(); localStorage.setItem(USER_KEY, value); return value; }
+export function clearStoredUsername() { localStorage.removeItem(USER_KEY); }
 
 export function loadState(username = getStoredUsername()) {
   if (!username) return { ...defaults };
   try {
     const stored = JSON.parse(localStorage.getItem(key(username)) || '{}');
-    // One-time migration: existing accounts created with the old 3-energy cap
-    // receive the new temporary 30-energy daily allocation without losing SF.
-    if (stored.energyVersion !== DAILY_ENERGY) {
-      const migrated = { ...defaults, ...stored, energy: DAILY_ENERGY, energyVersion: DAILY_ENERGY };
+    if (stored.energyVersion !== ENERGY_MIGRATION_VERSION) {
+      const migrated = { ...defaults, ...stored, energy: DAILY_ENERGY, energyVersion: ENERGY_MIGRATION_VERSION };
       localStorage.setItem(key(username), JSON.stringify(migrated));
       return migrated;
     }
     return { ...defaults, ...stored };
-  } catch {
-    return { ...defaults };
-  }
+  } catch { return { ...defaults }; }
 }
 
 export function saveState(state, username = getStoredUsername()) {
   if (!username) throw new Error('Login required');
-  localStorage.setItem(key(username), JSON.stringify({ ...state, energyVersion: DAILY_ENERGY }));
+  localStorage.setItem(key(username), JSON.stringify({ ...state, energyVersion: ENERGY_MIGRATION_VERSION }));
 }
 
 export function resetState(username = getStoredUsername()) {
@@ -50,9 +37,7 @@ export function resetState(username = getStoredUsername()) {
 
 function localDay() {
   const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 export function refreshDailyEnergy(state, username = getStoredUsername()) {
@@ -60,11 +45,11 @@ export function refreshDailyEnergy(state, username = getStoredUsername()) {
   if (state.lastEnergyDay !== day) {
     state.energy = DAILY_ENERGY;
     state.lastEnergyDay = day;
-    state.energyVersion = DAILY_ENERGY;
+    state.energyVersion = ENERGY_MIGRATION_VERSION;
     if (username) saveState(state, username);
-  } else if (state.energyVersion !== DAILY_ENERGY) {
+  } else if (state.energyVersion !== ENERGY_MIGRATION_VERSION) {
     state.energy = DAILY_ENERGY;
-    state.energyVersion = DAILY_ENERGY;
+    state.energyVersion = ENERGY_MIGRATION_VERSION;
     if (username) saveState(state, username);
   }
   return state;
