@@ -1,81 +1,31 @@
 <!doctype html>
 <html lang="en" dir="ltr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#080d1a">
-  <meta name="description" content="Earn more SF in Steem Flags.">
-  <meta name="application-name" content="Steem Flags">
-  <title>Earn more SF</title>
-  <link rel="stylesheet" href="css/style.css?v=20260817-20">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#080d1a"><meta name="description" content="Earn more SF in Steem Flags."><meta name="application-name" content="Steem Flags"><title>Earn more SF</title>
+<link rel="stylesheet" href="css/style.css?v=20260817-21">
 </head>
 <body>
-  <header class="topbar">
-    <button class="iconButton" id="menuButton" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
-    <a class="brand" href="./" aria-label="Steem Flags home"><img class="gameLogo logoSmall" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags"></a>
-    <div class="assetBar" id="assetBar" aria-label="Assets">
-      <span class="assetItem" title="Energy">⚡ <strong id="energyBalance">—</strong></span>
-      <a class="assetItem sfAsset" href="./earnsf.html" title="Earn more SF">SF <strong id="sfBalance">—</strong><span class="sfPlus" aria-hidden="true">+</span></a>
-      <span class="assetItem" title="STEEM"><img src="https://i.ibb.co/20K1tHyK/icon-circlesteem-gradient.png" alt="STEEM"> <strong id="steemBalance">—</strong></span>
-    </div>
-  </header>
-
-  <aside class="sideMenu" id="sideMenu" aria-hidden="true">
-    <div class="sideMenuHeader">
-      <img class="gameLogo logoSmall" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags">
-      <button class="iconButton" id="closeMenu" type="button" aria-label="Close menu">×</button>
-    </div>
-    <nav class="menuNav">
-      <a href="./">🏠 Home</a>
-      <a href="./earnsf.html">💰 Earn more SF</a>
-      <button type="button" id="languageMenu">🌐 Language</button>
-      <button type="button" id="newGameMenu">🎮 New Game</button>
-      <button type="button" id="logoutMenu">↪ Logout</button>
-    </nav>
-  </aside>
-  <div class="menuBackdrop" id="menuBackdrop" hidden></div>
-
-  <main class="appShell">
-    <section class="card hero">
-      <img class="gameLogo logoMedium" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags logo">
-      <h1>Earn more SF</h1>
-      <p class="muted">Complete games and answer flags correctly to earn SF.</p>
-      <a class="primary" href="./">Play Steem Flags</a>
-    </section>
-  </main>
-  <footer><span>Developed by</span> <a href="https://allmylinks.com/mehdiq1980" target="_blank" rel="noopener noreferrer">Mehdi Q.</a></footer>
-
-  <script>
-    const menuButton = document.getElementById('menuButton');
-    const closeMenu = document.getElementById('closeMenu');
-    const sideMenu = document.getElementById('sideMenu');
-    const backdrop = document.getElementById('menuBackdrop');
-    function setMenu(open) {
-      sideMenu.classList.toggle('open', open);
-      sideMenu.setAttribute('aria-hidden', String(!open));
-      menuButton.setAttribute('aria-expanded', String(open));
-      backdrop.hidden = !open;
-    }
-    menuButton.addEventListener('click', () => setMenu(true));
-    closeMenu.addEventListener('click', () => setMenu(false));
-    backdrop.addEventListener('click', () => setMenu(false));
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
-
-    const username = localStorage.getItem('steemFlagsUsername') || localStorage.getItem('steemUsername') || '';
-    const pointsKey = username ? 'steemFlagsTotalPoints_' + username : '';
-    const totalPoints = pointsKey ? (parseInt(localStorage.getItem(pointsKey) || '0', 10) || 0) : 0;
-    document.getElementById('sfBalance').textContent = totalPoints;
-
-    const energy = localStorage.getItem('steemFlagsEnergy_' + username);
-    if (energy !== null) document.getElementById('energyBalance').textContent = energy;
-    const steem = localStorage.getItem('steemFlagsSteem_' + username);
-    if (steem !== null) document.getElementById('steemBalance').textContent = steem;
-
-    document.getElementById('logoutMenu').addEventListener('click', () => {
-      ['steemFlagsUsername','steemUsername'].forEach(k => localStorage.removeItem(k));
-      location.href = './';
-    });
-    document.getElementById('newGameMenu').addEventListener('click', () => location.href = './');
-  </script>
-</body>
-</html>
+<header class="topbar">
+<button id="menuButton" class="iconButton" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">☰</button>
+<a class="brand" href="./" aria-label="Steem Flags home"><img class="gameLogo logoSmall" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags"></a>
+<div id="assetStats" class="stats"><span class="asset"><span class="assetIcon">⚡</span> Energy <b id="energyValue">—</b></span><span class="asset sfAsset"><img class="sfLogo" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="SF"><span class="assetLabel">SF</span> <b id="sfValue">—</b> <a href="./earnsf.html" class="earnSfLink" aria-label="Earn more SF" title="Earn more SF" style="color:#22c55e!important;font-weight:900;font-size:1.25em;text-decoration:none;margin-left:3px;line-height:1;">+</a></span><span class="asset steemAsset"><img class="steemLogo" src="https://s2.coinmarketcap.com/static/img/coins/64x64/1230.png" alt="Steem"><span>STEEM</span> <b id="steemValue">—</b></span></div>
+</header>
+<aside id="menu" class="menu" hidden><label class="menuLanguage" for="languageSelect"><span data-i18n="language">Language</span><select id="languageSelect" aria-label="Language"><option value="en">English</option><option value="fa">فارسی</option><option value="es">Español</option></select></label><button type="button" data-action="home" data-i18n="home">Home</button><button type="button" data-action="reset" data-i18n="reset">Reset Game</button><button type="button" data-action="logout" data-i18n="logout">Logout</button><a href="docs/ARCHITECTURE.md">Architecture</a><a href="docs/ROADMAP.md">Roadmap</a></aside>
+<main class="appShell"><section class="card hero"><img class="gameLogo logoMedium" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags logo"><h1>Earn more SF</h1><p class="muted">Complete games and answer flags correctly to earn SF.</p><a class="primary" href="./">Play Steem Flags</a></section></main>
+<footer><span>Developed by</span> <a href="https://allmylinks.com/mehdiq1980" target="_blank" rel="noopener noreferrer">Mehdi Q.</a></footer>
+<script type="module">
+import {loadState,refreshDailyEnergy,getStoredUsername,clearStoredUsername} from './js/storage.js';
+import {applyLanguage,getLanguage,setLanguage} from './js/i18n.js';
+const $=id=>document.getElementById(id); const username=getStoredUsername();
+if(username){const s=refreshDailyEnergy(loadState(username),username);$('energyValue').textContent=s.energy;$('sfValue').textContent=s.sf;}
+else{$('assetStats').hidden=true;$('logoutMenu').hidden=true;}
+applyLanguage(document,getLanguage());
+$('languageSelect').value=getLanguage();$('languageSelect').addEventListener('change',e=>{setLanguage(e.target.value);applyLanguage(document,e.target.value)});
+$('menuButton').onclick=()=>{const m=$('menu');m.hidden=!m.hidden;$('menuButton').setAttribute('aria-expanded',String(!m.hidden))};
+document.querySelector('[data-action="home"]').onclick=()=>location.href='./';
+document.querySelector('[data-action="reset"]').onclick=()=>location.href='./';
+$('logoutMenu').onclick=()=>{clearStoredUsername();location.href='./'};
+async function fetchSteem(account){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[account]]});for(const endpoint of ['https://api.steemit.com','https://api.steem.house','https://api.steemyy.com','https://api.steemworld.org']){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)continue;const p=await r.json();const b=p?.result?.[0]?.balance;if(typeof b==='string')return b.replace(/\s*STEEM\s*$/i,'').trim()}catch{}}return null}
+if(username){const b=await fetchSteem(username);if(b!==null)$('steemValue').textContent=b;}
+</script>
+</body></html>
