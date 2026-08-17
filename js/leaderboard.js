@@ -3,7 +3,7 @@ import { t } from './i18n.js';
 const root = document.getElementById('leaderboard');
 const AVATAR_RPC = 'https://api.steemit.com';
 const API_BASE = String(window.STEEM_FLAGS_API_URL || window.location.origin).replace(/\/$/, '');
-const LEADERBOARD_TITLE = 'Steem Flags Leaderboard🏆';
+const LEADERBOARD_TITLE = '🏆 Steem Flags Leaderboard';
 
 function avatarUrl(username) { return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`; }
 function render(rows) {
