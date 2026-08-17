@@ -2,7 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000"><title>Video Advertisement</title>
-<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden}.ad{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#111827,#020617)}.adBox{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center}.adText{font-size:clamp(24px,5vw,56px);font-weight:800;opacity:.9}.close{position:fixed;top:16px;right:16px;width:48px;height:48px;border:0;border-radius:50%;background:#fff;color:#111;font-size:30px;line-height:48px;cursor:pointer;z-index:2}.close:active{transform:scale(.95)}</style>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden}.ad{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#111827,#020617)}.adBox{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center}.adText{font-size:clamp(24px,5vw,56px);font-weight:800;opacity:.9}.timer{position:fixed;top:16px;left:16px;min-width:74px;padding:9px 13px;border-radius:10px;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.3);font-size:20px;font-weight:800;text-align:center;z-index:3}.close{position:fixed;top:16px;right:16px;width:48px;height:48px;border:0;border-radius:50%;background:#fff;color:#111;font-size:30px;line-height:48px;cursor:pointer;z-index:3}.close:active{transform:scale(.95)}.close[hidden]{display:none}
+</style>
 </head>
-<body><div class="ad"><button class="close" type="button" aria-label="Close advertisement" onclick="location.href='./earnsf.html'">×</button><div class="adBox"><div class="adText">Video Advertisement<br><small>Reward video • SF</small></div></div></div></body>
+<body>
+<div class="ad">
+  <div id="timer" class="timer" aria-live="polite">01:00</div>
+  <button id="closeButton" class="close" type="button" aria-label="Close advertisement" hidden onclick="location.href='./earnsf.html'">×</button>
+  <div class="adBox"><div class="adText">Video Advertisement<br><small>Reward video • SF</small></div></div>
+</div>
+<script>
+let remaining=60;const timer=document.getElementById('timer'),closeButton=document.getElementById('closeButton');
+function updateTimer(){const m=Math.floor(remaining/60),s=remaining%60;timer.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');if(remaining<=0){clearInterval(countdown);timer.textContent='00:00';closeButton.hidden=false;}}
+updateTimer();const countdown=setInterval(()=>{remaining--;updateTimer();},1000);
+</script>
+</body>
 </html>
