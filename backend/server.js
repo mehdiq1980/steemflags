@@ -14,6 +14,29 @@ async function init() {
   await pool.query(`CREATE INDEX IF NOT EXISTS leaderboard_sf_idx ON leaderboard (sf DESC, updated_at ASC, username ASC);`);
 }
 app.get('/health', async (_req, res) => { try { await pool.query('SELECT 1'); res.json({ ok: true }); } catch { res.status(503).json({ ok: false }); } });
-app.get('/api/leaderboard', async (req, res) => { const rawLimit = Number(req.query.limit || 10); const limit = Math.min(Math.max(Number.isInteger(rawLimit) ? rawLimit : 10, 1), 100); try { const { rows } = await pool.query('SELECT username, sf, updated_at FROM leaderboard ORDER BY sf DESC, updated_at ASC, username ASC LIMIT $1', [limit]); res.set('Cache-Control', 'no-store'); res.json({ leaderboard: rows }); } catch (error) { console.error(error); res.status(503).json({ error: 'Leaderboard unavailable' }); } });
-app.post('/api/leaderboard', async (req, res) => { const username = String(req.body?.username || '').trim().toLowerCase(); const sf = Number(req.body?.sf); if (!USERNAME_RE.test(username) || !Number.isInteger(sf) || sf < -1000000000 || sf > 1000000000) return res.status(400).json({ error: 'Invalid username or SF' }); try { await pool.query(`INSERT INTO leaderboard (username, sf) VALUES ($1, $2) ON CONFLICT (username) DO UPDATE SET sf = EXCLUDED.sf, updated_at = NOW()`, [username, sf]); res.json({ ok: true }); } catch (error) { console.error(error); res.status(503).json({ error: 'Leaderboard unavailable' }); } });
+app.get('/api/leaderboard', async (req, res) => {
+  const rawLimit = Number(req.query.limit || 10);
+  const limit = Math.min(Math.max(Number.isInteger(rawLimit) ? rawLimit : 10, 1), 100);
+  const username = String(req.query.username || '').trim().toLowerCase();
+  try {
+    const { rows } = await pool.query('SELECT username, sf, updated_at FROM leaderboard ORDER BY sf DESC, updated_at ASC, username ASC LIMIT $1', [limit]);
+    let yourRank = null;
+    let yourSF = null;
+    if (USERNAME_RE.test(username)) {
+      const result = await pool.query('SELECT sf, (SELECT COUNT(*) + 1 FROM leaderboard b WHERE b.sf > a.sf) AS rank FROM leaderboard a WHERE a.username = $1', [username]);
+      if (result.rows[0]) { yourSF = result.rows[0].sf; yourRank = Number(result.rows[0].rank); }
+    }
+    res.set('Cache-Control', 'no-store');
+    res.json({ leaderboard: rows, yourRank, yourSF });
+  } catch (error) { console.error(error); res.status(503).json({ error: 'Leaderboard unavailable' }); }
+});
+app.post('/api/leaderboard', async (req, res) => {
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const sf = Number(req.body?.sf);
+  if (!USERNAME_RE.test(username) || !Number.isInteger(sf) || sf < -1000000000 || sf > 1000000000) return res.status(400).json({ error: 'Invalid username or SF' });
+  try {
+    await pool.query(`INSERT INTO leaderboard (username, sf) VALUES ($1, $2) ON CONFLICT (username) DO UPDATE SET sf = EXCLUDED.sf, updated_at = NOW()`, [username, sf]);
+    res.json({ ok: true });
+  } catch (error) { console.error(error); res.status(503).json({ error: 'Leaderboard unavailable' }); }
+});
 init().then(() => app.listen(port, () => console.log(`Steem Flags leaderboard API listening on ${port}`))).catch(error => { console.error(error); process.exit(1); });
