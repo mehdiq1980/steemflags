@@ -1,8 +1,5 @@
-// Global leaderboard API configuration.
-// Keep the API same-origin by default so the frontend works when the backend
-// is mounted under the same public origin. A separate deployment may override
-// this value before app.js loads.
-window.STEEM_FLAGS_API_URL = window.STEEM_FLAGS_API_URL || window.location.origin;
+// Cloudflare Worker API for the global Steem Flags leaderboard.
+window.STEEM_FLAGS_API_URL = 'https://steemflags.mehdiq.workers.dev';
 
 window.submitGlobalSF = async function submitGlobalSF(username, sf) {
   const base = String(window.STEEM_FLAGS_API_URL || '').replace(/\/$/, '');
