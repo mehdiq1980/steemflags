@@ -1,0 +1,11 @@
+name = "steem-flags-api"
+main = "src/index.js"
+compatibility_date = "2026-08-18"
+
+# Create the D1 database first, then replace DATABASE_ID below with the UUID
+# returned by: npx wrangler d1 create steem-flags-db
+[[d1_databases]]
+binding = "DB"
+database_name = "steem-flags-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
