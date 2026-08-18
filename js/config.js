@@ -14,6 +14,7 @@ window.submitGlobalSF = async function submitGlobalSF(username, sf) {
       body: JSON.stringify({ username, sf: Number(sf) }),
       cache: 'no-store'
     });
+    if (response.ok) window.dispatchEvent(new CustomEvent('steemflags:sf-changed'));
     return response.ok;
   } catch (error) {
     console.warn('Global SF submission failed:', error);
