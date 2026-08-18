@@ -1,0 +1,14 @@
+name = "steem-flags-api"
+main = "worker.js"
+compatibility_date = "2026-08-19"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "steem-flags-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Run locally with:
+# npx wrangler dev
+#
+# After creating the D1 database, replace database_id above with the
+# database ID shown by Cloudflare.
