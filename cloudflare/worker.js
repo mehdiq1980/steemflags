@@ -12,8 +12,8 @@ const json = (data, status = 200) =>
 
 function normalizeUsername(value) {
   if (typeof value !== "string") return null;
-  const username = value.trim();
-  if (!/^[a-z0-9.-]{3,32}$/i.test(username)) return null;
+  const username = value.trim().toLowerCase();
+  if (!/^[a-z0-9.-]{3,32}$/.test(username)) return null;
   return username;
 }
 
@@ -22,36 +22,49 @@ function newId() {
 }
 
 async function ensurePlayer(db, username) {
-  await db
-    .prepare(
-      `INSERT INTO players (username)
-       VALUES (?)
-       ON CONFLICT(username) DO NOTHING`
-    )
-    .bind(username)
-    .run();
+  await db.prepare(`INSERT INTO players (username) VALUES (?) ON CONFLICT(username) DO NOTHING`).bind(username).run();
 }
 
-async function leaderboard(db, limit = 100) {
+async function getLeaderboard(db, limit = 100) {
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 100);
-  const result = await db
-    .prepare(
-      `SELECT username, total_points, games_played, correct_answers, total_questions
-       FROM players
-       ORDER BY total_points DESC, username ASC
-       LIMIT ?`
-    )
-    .bind(safeLimit)
-    .all();
+  const result = await db.prepare(`
+    SELECT username, total_points, games_played, correct_answers, total_questions
+    FROM players
+    ORDER BY total_points DESC, username ASC
+    LIMIT ?
+  `).bind(safeLimit).all();
 
   return result.results.map((row, index) => ({
     rank: index + 1,
     username: row.username,
-    points: row.total_points,
-    games: row.games_played,
-    correctAnswers: row.correct_answers,
-    questions: row.total_questions
+    sf: Number(row.total_points || 0),
+    points: Number(row.total_points || 0),
+    games: Number(row.games_played || 0),
+    correctAnswers: Number(row.correct_answers || 0),
+    questions: Number(row.total_questions || 0)
   }));
+}
+
+async function getPlayer(db, username) {
+  const row = await db.prepare(`
+    SELECT username, total_points, games_played, correct_answers, total_questions
+    FROM players WHERE username = ?
+  `).bind(username).first();
+  if (!row) return null;
+
+  const rankRow = await db.prepare(`
+    SELECT COUNT(*) + 1 AS rank FROM players WHERE total_points > ?
+  `).bind(row.total_points).first();
+
+  return {
+    username: row.username,
+    sf: Number(row.total_points || 0),
+    points: Number(row.total_points || 0),
+    games: Number(row.games_played || 0),
+    correctAnswers: Number(row.correct_answers || 0),
+    questions: Number(row.total_questions || 0),
+    rank: Number(rankRow?.rank || 1)
+  };
 }
 
 async function handle(request, env) {
@@ -59,7 +72,6 @@ async function handle(request, env) {
   const path = url.pathname.replace(/\/+$/, "") || "/";
 
   if (request.method === "OPTIONS") return json({ ok: true });
-
   if (!env.DB) return json({ success: false, error: "D1 binding DB is not configured" }, 500);
 
   if (request.method === "GET" && path === "/api/health") {
@@ -69,81 +81,57 @@ async function handle(request, env) {
 
   if (request.method === "GET" && path === "/api/leaderboard") {
     const limit = url.searchParams.get("limit");
-    return json({ success: true, leaderboard: await leaderboard(env.DB, limit) });
+    const username = normalizeUsername(url.searchParams.get("username"));
+    const rows = await getLeaderboard(env.DB, limit);
+    const me = username ? await getPlayer(env.DB, username) : null;
+    return json({ success: true, leaderboard: rows, me });
   }
 
   if (request.method === "GET" && path === "/api/leaderboard/me") {
     const username = normalizeUsername(url.searchParams.get("username"));
     if (!username) return json({ success: false, error: "Invalid username" }, 400);
+    return json({ success: true, player: await getPlayer(env.DB, username) });
+  }
 
-    const row = await env.DB
-      .prepare(
-        `SELECT username, total_points, games_played, correct_answers, total_questions
-         FROM players WHERE username = ?`
-      )
-      .bind(username)
-      .first();
+  // Compatibility endpoint used by the current Steem Flags frontend.
+  // It stores the user's current SF balance in the leaderboard record.
+  if (request.method === "POST" && path === "/api/leaderboard") {
+    let body;
+    try { body = await request.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
 
-    if (!row) return json({ success: true, player: null });
+    const username = normalizeUsername(body?.username);
+    const sf = Number(body?.sf);
+    if (!username || !Number.isSafeInteger(sf) || sf < 0) {
+      return json({ success: false, error: "Invalid username or SF" }, 400);
+    }
 
-    const rankRow = await env.DB
-      .prepare(
-        `SELECT COUNT(*) + 1 AS rank
-         FROM players
-         WHERE total_points > ?`
-      )
-      .bind(row.total_points)
-      .first();
+    await ensurePlayer(env.DB, username);
+    await env.DB.prepare(`
+      UPDATE players
+      SET total_points = ?, sf_balance = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE username = ?
+    `).bind(sf, sf, username).run();
 
-    return json({
-      success: true,
-      player: {
-        username: row.username,
-        points: row.total_points,
-        games: row.games_played,
-        correctAnswers: row.correct_answers,
-        questions: row.total_questions,
-        rank: rankRow.rank
-      }
-    });
+    return json({ success: true, player: await getPlayer(env.DB, username) });
   }
 
   if (request.method === "POST" && path === "/api/game/start") {
     let body;
-    try {
-      body = await request.json();
-    } catch {
-      return json({ success: false, error: "Invalid JSON" }, 400);
-    }
-
+    try { body = await request.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
     const username = normalizeUsername(body?.username);
     if (!username) return json({ success: false, error: "Invalid username" }, 400);
 
     await ensurePlayer(env.DB, username);
-
     const sessionId = newId();
-    await env.DB
-      .prepare(
-        `INSERT INTO game_sessions (id, username, question_number, score, status)
-         VALUES (?, ?, 0, 0, 'active')`
-      )
-      .bind(sessionId, username)
-      .run();
-
+    await env.DB.prepare(`
+      INSERT INTO game_sessions (id, username, question_number, score, status)
+      VALUES (?, ?, 0, 0, 'active')
+    `).bind(sessionId, username).run();
     return json({ success: true, sessionId, username, score: 0 });
   }
 
-  // Intentionally does NOT accept a client-supplied score or SF amount.
-  // The answer-validation logic will be connected to the authoritative
-  // question bank in the next migration/implementation step.
   if (request.method === "POST" && path.startsWith("/api/game/") && path.endsWith("/answer")) {
-    return json(
-      {
-        success: false,
-        error: "Answer endpoint is not enabled yet; authoritative question validation must be connected first."
-      },
-      501
-    );
+    return json({ success: false, error: "Answer endpoint is not enabled yet; authoritative question validation must be connected first." }, 501);
   }
 
   return json({ success: false, error: "Not found" }, 404);
@@ -151,9 +139,8 @@ async function handle(request, env) {
 
 export default {
   async fetch(request, env) {
-    try {
-      return await handle(request, env);
-    } catch (error) {
+    try { return await handle(request, env); }
+    catch (error) {
       console.error(error);
       return json({ success: false, error: "Internal server error" }, 500);
     }
