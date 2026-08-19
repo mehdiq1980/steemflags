@@ -9,7 +9,7 @@ function avatarUrl(username) {
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>\'"]/g, character => ({
+  return String(value).replace(/[&<>\'\"]/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
   }[character]));
 }
@@ -27,7 +27,7 @@ function render(rows) {
     return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${escapeAttribute(avatar)}" alt="@${escapeAttribute(username)}" loading="lazy" referrerpolicy="no-referrer"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
   }).join('');
 
-  const rewardPool = `<iframe src="./steemrewardpool.html?v=20260819-01" title="Weekly STEEM Rewards Pool" style="display:block;width:100%;height:185px;border:0;margin:0 0 18px;border-radius:18px;overflow:hidden;"></iframe>`;
+  const rewardPool = `<div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
   const leaderboardTitle = `<h2>${LEADERBOARD_TITLE}</h2>`;
 
   if (!rows.length) {
@@ -54,7 +54,7 @@ async function loadLeaderboard() {
     render(rows);
   } catch (error) {
     console.warn('GitHub leaderboard unavailable:', error);
-    root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><iframe src="./steemrewardpool.html?v=20260819-01" title="Weekly STEEM Rewards Pool" style="display:block;width:100%;height:185px;border:0;margin:0 0 18px;border-radius:18px;overflow:hidden;"></iframe><p class="muted">${t('leaderboardUnavailable')}</p>`;
+    root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div><p class="muted">${t('leaderboardUnavailable')}</p>`;
   }
 }
 
