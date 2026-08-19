@@ -1,20 +1,9 @@
-// Cloudflare Worker API for the global Steem Flags leaderboard.
-window.STEEM_FLAGS_API_URL = 'https://steemflags.mehdiq.workers.dev';
+// GitHub-only leaderboard storage.
+// No Cloudflare Worker or external leaderboard API is used.
+window.STEEM_FLAGS_API_URL = '';
 
-window.submitGlobalSF = async function submitGlobalSF(username, sf) {
-  const base = String(window.STEEM_FLAGS_API_URL || '').replace(/\/$/, '');
-  if (!base || !username) return false;
-  try {
-    const response = await fetch(`${base}/api/leaderboard`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, sf: Number(sf) }),
-      cache: 'no-store'
-    });
-    if (response.ok) window.dispatchEvent(new CustomEvent('steemflags:sf-changed'));
-    return response.ok;
-  } catch (error) {
-    console.warn('Global SF submission failed:', error);
-    return false;
-  }
+// Kept as a no-op for compatibility with the existing frontend.
+// Global leaderboard updates are handled through the GitHub data/workflow layer.
+window.submitGlobalSF = async function submitGlobalSF() {
+  return false;
 };
