@@ -19,11 +19,6 @@ function escapeAttribute(value) {
 }
 
 function render(rows) {
-  if (!rows.length) {
-    root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><p class="muted">${t('leaderboardEmpty')}</p>`;
-    return;
-  }
-
   const body = rows.map((row, index) => {
     const username = String(row.username || '—');
     const sf = Number(row.sf || 0);
@@ -32,7 +27,15 @@ function render(rows) {
     return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${escapeAttribute(avatar)}" alt="@${escapeAttribute(username)}" loading="lazy" referrerpolicy="no-referrer"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
   }).join('');
 
-  root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><table><thead><tr><th class="rank">${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
+  const rewardPool = `<iframe src="./steemrewardpool.html?v=20260819-01" title="Weekly STEEM Rewards Pool" style="display:block;width:100%;height:185px;border:0;margin:0 0 18px;border-radius:18px;overflow:hidden;"></iframe>`;
+  const leaderboardTitle = `<h2>${LEADERBOARD_TITLE}</h2>`;
+
+  if (!rows.length) {
+    root.innerHTML = `${leaderboardTitle}${rewardPool}<p class="muted">${t('leaderboardEmpty')}</p>`;
+    return;
+  }
+
+  root.innerHTML = `${leaderboardTitle}${rewardPool}<table><thead><tr><th class="rank">${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 async function loadLeaderboard() {
@@ -51,7 +54,7 @@ async function loadLeaderboard() {
     render(rows);
   } catch (error) {
     console.warn('GitHub leaderboard unavailable:', error);
-    root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><p class="muted">${t('leaderboardUnavailable')}</p>`;
+    root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><iframe src="./steemrewardpool.html?v=20260819-01" title="Weekly STEEM Rewards Pool" style="display:block;width:100%;height:185px;border:0;margin:0 0 18px;border-radius:18px;overflow:hidden;"></iframe><p class="muted">${t('leaderboardUnavailable')}</p>`;
   }
 }
 
