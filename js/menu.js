@@ -2,7 +2,7 @@ export async function loadMenu(){
     const container = document.getElementById("menuContainer");
     if(!container) return;
 
-    const response = await fetch("./components/menu.html?v=20260820-05", {
+    const response = await fetch("./components/menu.html?v=20260820-06", {
         cache:"no-store"
     });
 
@@ -25,6 +25,20 @@ export async function loadMenu(){
         menuButton.setAttribute("aria-expanded", String(willOpen));
     };
 
+    menu.addEventListener("click", async (event) => {
+        const actionLink = event.target.closest("[data-action]");
+        if(!actionLink) return;
+
+        const action = actionLink.dataset.action;
+
+        if(action === "logout"){
+            event.preventDefault();
+            const { clearStoredUsername } = await import("./storage.js");
+            clearStoredUsername();
+            window.location.href = "./";
+        }
+    });
+
     document.addEventListener("click", (event) => {
         if(!menu.hidden && !menu.contains(event.target) && !menuButton.contains(event.target)){
             closeMenu();
@@ -32,6 +46,8 @@ export async function loadMenu(){
     });
 
     menu.addEventListener("click", (event) => {
-        event.stopPropagation();
+        if(!event.target.closest("[data-action]")){
+            event.stopPropagation();
+        }
     });
 }
