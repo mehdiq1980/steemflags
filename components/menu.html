@@ -1,54 +1,24 @@
 <aside id="menu" class="menu" hidden>
 
   <label class="menuLanguage" for="languageSelect">
-
-    <span data-i18n="language">
-      Language
-    </span>
-
+    <span data-i18n="language">Language</span>
     <select id="languageSelect" aria-label="Language">
-
       <option value="en">English</option>
       <option value="fa">فارسی</option>
       <option value="es">Español</option>
-
     </select>
-
   </label>
 
+  <a href="./">Home</a>
 
-  <button type="button"
-          data-action="home"
-          data-i18n="home">
+  <a href="./" data-action="new-game">New Game</a>
 
-    Home
+  <a href="./" data-action="resume-game">Resume Game</a>
 
-  </button>
+  <span class="disabled-menu-item">Road Map</span>
 
+  <a href="about.html">About Steem Flags</a>
 
-  <a href="about.html">
-    ℹ️ About
-  </a>
-
-
-  <button type="button"
-          data-action="logout"
-          data-i18n="logout"
-          hidden>
-
-    Logout
-
-  </button>
-
-
-  <a href="docs/ARCHITECTURE.md">
-    Architecture
-  </a>
-
-
-  <a href="docs/ROADMAP.md">
-    Roadmap
-  </a>
-
+  <a href="#" data-action="logout" hidden>Logout</a>
 
 </aside>
