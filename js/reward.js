@@ -40,7 +40,7 @@ export function showClaimDialog({username,sf,eventId}){
     <div class="sfClaimAmount">+${sf}<span class="sfClaimUnit">SF</span></div>
     <button id="sfClaimButton" class="sfClaimButton" type="button">Claim Rewards</button>
     <p class="sfClaimStatus">Your reward is ready to claim.</p>
-    <iframe class="sfClaimWarning" src="./savewarninig.html?v=20260819-01" title="SF reward saving warning"></iframe>
+    <iframe class="sfClaimWarning" src="./savewarninig.html?v=20260819-02" title="SF reward saving warning"></iframe>
   </section>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#sfClaimButton').addEventListener('click',()=>{
