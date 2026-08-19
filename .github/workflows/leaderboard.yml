@@ -15,13 +15,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Process reward queue
-        run: python3 scripts/process_rewards.py
+      - name: Scan Steem reward events
+        run: python3 scripts/process_steem_rewards.py
 
       - name: Commit leaderboard changes
         run: |
           git config user.name "steemflags-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/leaderboard.json data/rewards/pending.json
+          git add data/leaderboard.json data/rewards/scanner.json
           git diff --cached --quiet || git commit -m "Process Steem Flags rewards"
           git push
