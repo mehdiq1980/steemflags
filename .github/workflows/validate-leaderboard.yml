@@ -1,0 +1,33 @@
+name: Validate Leaderboard
+
+on:
+  push:
+    paths:
+      - 'data/leaderboard.json'
+      - '.github/workflows/validate-leaderboard.yml'
+  pull_request:
+    paths:
+      - 'data/leaderboard.json'
+      - '.github/workflows/validate-leaderboard.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate leaderboard JSON
+        run: python -m json.tool data/leaderboard.json >/dev/null
+      - name: Validate leaderboard structure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('data/leaderboard.json').read_text())
+          assert data.get('version') == 1
+          assert isinstance(data.get('players'), dict)
+          for username, value in data['players'].items():
+              assert isinstance(username, str) and username
+              assert isinstance(value, dict)
+              assert isinstance(value.get('sf'), int) and value['sf'] >= 0
+          print('Leaderboard structure is valid.')
+          PY
