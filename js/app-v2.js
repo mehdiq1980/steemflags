@@ -3,7 +3,7 @@ import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
-import { broadcastSFReward } from './reward.js';
+import { broadcastSFReward } from './reward.js?v=20260819-09';
 const $ = (id) => document.getElementById(id);
 const GAME_STATE_PREFIX = 'steemFlags.incompleteGame.v2_';
 const REWARD_EVENT_PREFIX = 'steemFlags.rewardEvent.v1_';
@@ -16,7 +16,7 @@ function loadPendingReward(username){if(!username)return null;try{return JSON.pa
 function savePendingReward(username,reward){if(username&&reward)localStorage.setItem(rewardEventKey(username),JSON.stringify(reward))}
 function clearPendingReward(username){if(username)localStorage.removeItem(rewardEventKey(username))}
 async function submitPendingReward(username,postingKey){const reward=loadPendingReward(username);if(!reward)return false;const result=await broadcastSFReward(reward,postingKey);if(result.ok){clearPendingReward(username);return true}return false}
-async function loadComponent(){const r=await fetch(`./components/app-shell.html?v=20260819-08`,{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
+async function loadComponent(){const r=await fetch(`./components/app-shell.html?v=20260819-09`,{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
 async function loadLeaderboard(){try{await import(`./leaderboard.js?v=${Date.now()}`)}catch(e){console.warn('Leaderboard failed',e)}}
 async function fetchSteemBalance(account){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[account]]});const endpoints=['https://api.steemit.com','https://api.steem.house','https://api.steemyy.com','https://api.steemworld.org'];for(const endpoint of endpoints){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)continue;const p=await r.json();const b=p?.result?.[0]?.balance;if(typeof b==='string'&&/\d/.test(b))return b.replace(/\s*STEEM\s*$/i,'').trim()}catch(e){console.warn('STEEM balance endpoint failed',endpoint,e)}}return null}
 async function refreshSteemBalance(account,element){if(!account||!element)return;const balance=await fetchSteemBalance(account);if(balance!==null)element.textContent=balance}
