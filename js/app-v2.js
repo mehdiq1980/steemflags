@@ -4,6 +4,7 @@ import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from '
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
 import { broadcastSFReward } from './reward.js?v=20260819-12';
+import { loadMenu } from './menu.js';
 const $ = (id) => document.getElementById(id);
 const GAME_STATE_PREFIX = 'steemFlags.incompleteGame.v2_';
 const gameStateKey = (username) => `${GAME_STATE_PREFIX}${encodeURIComponent(String(username).trim().toLowerCase())}`;
@@ -14,7 +15,26 @@ async function loadComponent(){const r=await fetch(`./components/app-shell.html?
 async function loadLeaderboard(){try{await import(`./leaderboard.js?v=${Date.now()}`)}catch(e){console.warn('Leaderboard failed',e)}}
 async function fetchSteemBalance(account){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[account]]});const endpoints=['https://api.steemit.com','https://api.steem.house','https://api.steemyy.com','https://api.steemworld.org'];for(const endpoint of endpoints){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)continue;const p=await r.json();const b=p?.result?.[0]?.balance;if(typeof b==='string'&&/\d/.test(b))return b.replace(/\s*STEEM\s*$/i,'').trim()}catch(e){console.warn('STEEM balance endpoint failed',endpoint,e)}}return null}
 async function refreshSteemBalance(account,element){if(!account||!element)return;const balance=await fetchSteemBalance(account);if(balance!==null)element.textContent=balance}
-async function bootstrap(){try{$('app').innerHTML=await loadComponent();await loadLeaderboard();start()}catch(e){console.error(e)}}
+async function bootstrap(){
+
+try{
+
+$('app').innerHTML =
+await loadComponent();
+
+await loadMenu();
+
+await loadLeaderboard();
+
+start();
+
+}catch(e){
+
+console.error(e);
+
+}
+
+}
 function start(){let username=getStoredUsername(),state=loadState(username),progress=loadProgress(username),postingKey=null;const loginView=$('loginView'),home=$('homeView'),lb=$('leaderboardSection'),gameView=$('gameView'),answers=$('answers'),feedback=$('feedback'),next=$('nextButton'),energy=$('energyValue'),sf=$('sfValue'),steem=$('steemValue'),assets=$('assetStats'),counter=$('questionCounter'),score=$('scoreLabel'),flag=$('flagImage'),newBtn=$('newGameButton'),resumeBtn=$('resumeGameButton'),summary=$('progressSummary'),menu=$('menu'),menuBtn=$('menuButton'),loginForm=$('loginForm'),usernameInput=$('usernameInput'),loginFeedback=$('loginFeedback'),loggedIn=$('loggedInUser'),logout=document.querySelector('[data-action="logout"]'),lang=$('languageSelect'),bar=$('quizProgressBar'),info=$('countryInfoLink');let key=$('postingKeyInput');if(!key){key=document.createElement('input');key.id='postingKeyInput';key.type='password';key.required=true;loginForm.insertBefore(key,$('loginButton'))}const game=new FlagGame(renderQuestion);let answered=false;
 function hideInfo(){info.hidden=true;info.removeAttribute('href');info.setAttribute('aria-hidden','true');info.tabIndex=-1;info.style.setProperty('display','none','important')}
 function basicUrl(name){const code=getLanguage()==='fa'?'fa':getLanguage()==='es'?'es':'en';return `https://${code}.wikipedia.org/wiki/${encodeURIComponent(String(name).trim().replace(/ /g,'_'))}`}
