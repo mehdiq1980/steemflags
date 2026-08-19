@@ -1,22 +1,21 @@
 name: Process Steem Flags SF events
 
 on:
-  push:
-    paths:
-      - 'data/game-events/*.json'
+  issues:
+    types: [opened]
   workflow_dispatch:
 
 permissions:
   contents: write
+  issues: write
 
-# Serialize leaderboard updates so two simultaneous runs cannot overwrite
-# each other's changes.
 concurrency:
   group: steemflags-sf-ledger
   cancel-in-progress: false
 
 jobs:
-  validate-and-update:
+  process:
+    if: startsWith(github.event.issue.title, '[SF-EVENT]')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,97 +23,70 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate events and rebuild leaderboard
+      - name: Validate and apply SF event
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         shell: python
         run: |
-          import datetime
-          import json
-          import pathlib
-          import re
-          import sys
+          import datetime, json, os, pathlib, re, sys
 
-          root = pathlib.Path('.')
-          ledger_path = root / 'data' / 'leaderboard.json'
-          events_dir = root / 'data' / 'game-events'
+          body = os.environ.get('ISSUE_BODY', '')
+          issue_number = os.environ['ISSUE_NUMBER']
 
-          if ledger_path.exists():
-              ledger = json.loads(ledger_path.read_text(encoding='utf-8'))
-          else:
-              ledger = {'version': 1, 'updated_at': None, 'players': {}, 'processed_events': []}
+          def field(name):
+              m = re.search(r'^' + re.escape(name) + r':\s*(.+?)\s*$', body, re.MULTILINE)
+              return m.group(1).strip() if m else ''
 
+          event_id = field('event_id')
+          username = field('username').lower()
+          event_type = field('type')
+          delta_text = field('sf_delta')
+          created_at = field('created_at')
+
+          errors = []
+          if not re.fullmatch(r'[A-Za-z0-9._:-]{8,128}', event_id): errors.append('invalid event_id')
+          if not re.fullmatch(r'[a-z0-9.-]{3,32}', username): errors.append('invalid username')
+          if event_type not in {'game_result', 'reward'}: errors.append('invalid event type')
+          try: delta = int(delta_text)
+          except ValueError: delta = None
+          if delta is None or delta == 0 or abs(delta) > 20: errors.append('invalid sf_delta')
+          try:
+              dt = datetime.datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+              if abs((datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds()) > 86400: errors.append('timestamp outside 24h')
+          except ValueError: errors.append('invalid created_at')
+
+          if errors:
+              print('Rejected:', ', '.join(errors)); sys.exit(1)
+
+          ledger_path = pathlib.Path('data/leaderboard.json')
+          ledger = json.loads(ledger_path.read_text(encoding='utf-8'))
           players = ledger.setdefault('players', {})
           processed = set(ledger.setdefault('processed_events', []))
-          changed = False
-          username_re = re.compile(r'^[a-z0-9.-]{3,32}$')
-          event_id_re = re.compile(r'^[A-Za-z0-9._:-]{8,128}$')
 
-          for path in sorted(events_dir.glob('*.json')):
-              try:
-                  event = json.loads(path.read_text(encoding='utf-8'))
-              except Exception as exc:
-                  print(f'Invalid JSON: {path}: {exc}')
-                  sys.exit(1)
+          if event_id in processed:
+              print('Duplicate event; no change.'); sys.exit(0)
 
-              event_id = str(event.get('event_id', '')).strip()
-              username = str(event.get('username', '')).strip().lower()
-              event_type = str(event.get('type', '')).strip()
-              delta = event.get('sf_delta')
-              created_at = str(event.get('created_at', '')).strip()
+          player = players.setdefault(username, {'sf': 0})
+          player['sf'] = max(0, int(player.get('sf', 0)) + delta)
+          processed.add(event_id)
+          ledger['processed_events'] = sorted(processed)
+          ledger['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+          ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print(f'Applied {delta:+d} SF to @{username}; new balance={player["sf"]}; issue={issue_number}')
 
-              if not event_id or not event_id_re.fullmatch(event_id):
-                  print(f'Invalid event_id in {path}')
-                  sys.exit(1)
-              if event_id in processed:
-                  continue
-              if not username_re.fullmatch(username):
-                  print(f'Invalid username in {path}')
-                  sys.exit(1)
-              if event_type not in {'correct_answer', 'wrong_answer', 'reward'}:
-                  print(f'Invalid event type in {path}')
-                  sys.exit(1)
-              if not isinstance(delta, int) or isinstance(delta, bool) or abs(delta) > 100:
-                  print(f'Invalid sf_delta in {path}')
-                  sys.exit(1)
-              if event_type == 'correct_answer' and delta != 1:
-                  print(f'correct_answer must award exactly +1 SF: {path}')
-                  sys.exit(1)
-              if event_type == 'wrong_answer' and delta != -1:
-                  print(f'wrong_answer must award exactly -1 SF: {path}')
-                  sys.exit(1)
-              if not created_at:
-                  print(f'Missing created_at in {path}')
-                  sys.exit(1)
-
-              try:
-                  datetime.datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-              except ValueError:
-                  print(f'Invalid created_at in {path}')
-                  sys.exit(1)
-
-              player = players.setdefault(username, {'sf': 0})
-              current = int(player.get('sf', 0))
-              player['sf'] = max(0, current + delta)
-              processed.add(event_id)
-              changed = True
-
-          if changed:
-              ledger['processed_events'] = sorted(processed)
-              ledger['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
-              ledger_path.write_text(
-                  json.dumps(ledger, ensure_ascii=False, indent=2) + '\n',
-                  encoding='utf-8'
-              )
-          else:
-              print('No new SF events to process.')
-
-      - name: Commit updated leaderboard
+      - name: Commit leaderboard
         run: |
-          if git diff --quiet -- data/leaderboard.json; then
-            echo "No leaderboard changes."
-            exit 0
-          fi
+          if git diff --quiet -- data/leaderboard.json; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/leaderboard.json
-          git commit -m "Update SF leaderboard"
+          git commit -m "Update SF leaderboard from game event"
           git push
+
+      - name: Close processed event issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --comment "SF event processed successfully."
