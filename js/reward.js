@@ -1,20 +1,6 @@
-const GITHUB_ISSUE_URL = 'https://github.com/mehdiq1980/steemflags/issues/new';
+import { loadState, saveState } from './storage.js';
 
-function ensureClaimStyles(){
-  if(document.getElementById('sfClaimStyles')) return;
-  const style=document.createElement('style');
-  style.id='sfClaimStyles';
-  style.textContent=`
-    .sfClaimOverlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.82);backdrop-filter:blur(5px);overflow:auto}
-    .sfClaimCard{width:min(92vw,430px);max-height:calc(100vh - 40px);overflow-y:auto;padding:34px 24px;text-align:center;border-radius:24px;background:#0d1628;border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 70px rgba(0,0,0,.45);box-sizing:border-box}
-    .sfClaimTitle{margin:0 0 16px;font-size:1.4rem;font-weight:800}.sfClaimAmount{margin:8px 0 26px;font-size:3.8rem;line-height:1;font-weight:900;letter-spacing:-.05em}.sfClaimUnit{font-size:1.25rem;font-weight:800;margin-left:7px}
-    .sfClaimButton{width:100%;border:0;border-radius:14px;padding:16px 20px;background:#22c55e;color:#06120a;font-size:1.1rem;font-weight:900;cursor:pointer}.sfClaimButton:hover{background:#16a34a}.sfClaimButton:disabled{opacity:.65;cursor:wait}
-    .sfClaimStatus{min-height:1.4em;margin:14px 0 0;font-size:.92rem;color:#aab6c9}
-    .sfClaimWarning{display:block;width:100%;height:390px;margin:18px 0 0;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#fff}
-    @media (max-width:480px){.sfClaimOverlay{padding:10px}.sfClaimCard{width:96vw;max-height:calc(100vh - 20px);padding:26px 16px}.sfClaimAmount{font-size:3.3rem}.sfClaimWarning{height:360px}}
-  `;
-  document.head.appendChild(style);
-}
+const GITHUB_ISSUE_URL = 'https://github.com/mehdiq1980/steemflags/issues/new';
 
 function buildIssueUrl({username,sf,eventId}){
   const title=`[SF-EVENT] ${username} +${sf} SF`;
@@ -29,26 +15,24 @@ function buildIssueUrl({username,sf,eventId}){
   return `${GITHUB_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
 
+function saveReward(username, amount){
+  const state = loadState(username);
+  state.sf = Number(state.sf || 0) + Number(amount);
+  saveState(state, username);
+  return state.sf;
+}
+
 export function showClaimDialog({username,sf,eventId}){
-  ensureClaimStyles();
-  document.getElementById('sfClaimOverlay')?.remove();
   const overlay=document.createElement('div');
-  overlay.id='sfClaimOverlay';
-  overlay.className='sfClaimOverlay';
-  overlay.innerHTML=`<section class="sfClaimCard" role="dialog" aria-modal="true">
-    <h2 class="sfClaimTitle">Game Complete!</h2>
-    <div class="sfClaimAmount">+${sf}<span class="sfClaimUnit">SF</span></div>
-    <button id="sfClaimButton" class="sfClaimButton" type="button">Claim Rewards</button>
-    <p class="sfClaimStatus">Your reward is ready to claim.</p>
-    <iframe class="sfClaimWarning" src="./savewarninig.html?v=20260819-02" title="SF reward saving warning"></iframe>
-  </section>`;
+  overlay.innerHTML=`<div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#081020dd"><div style="background:#0d1628;padding:30px;border-radius:20px;text-align:center;color:white"><h2>Game Complete!</h2><div style="font-size:48px;font-weight:bold">+${sf} SF</div><button id="sfClaimButton" style="margin-top:20px;padding:15px 30px;background:#22c55e;border:0;border-radius:12px;font-weight:bold">Claim Rewards</button></div></div>`;
   document.body.appendChild(overlay);
-  overlay.querySelector('#sfClaimButton').addEventListener('click',()=>{
+  overlay.querySelector('#sfClaimButton').onclick=()=>{
+    saveReward(username,sf);
     const url=buildIssueUrl({username,sf,eventId});
     window.open(url,'_blank','noopener,noreferrer');
     overlay.remove();
     window.location.replace('./');
-  });
+  };
 }
 
 export async function broadcastSFReward({username,sf,eventId}){
