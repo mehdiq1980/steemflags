@@ -44,8 +44,14 @@ export class FlagGame {
     this.score = Number(snapshot.score) || 0;
     this.current = snapshot.current;
     this.used = new Set(Array.isArray(snapshot.used) ? snapshot.used : []);
-    this.answered = Boolean(snapshot.answered);
     this.completed = false;
+
+    // A previous version could save question 20 with an answered=true flag
+    // even though the final answer was not successfully processed. Treat an
+    // incomplete final question as unanswered so Resume Game keeps it usable.
+    const isFinalQuestion = this.questionNumber >= this.totalQuestions;
+    this.answered = isFinalQuestion ? false : Boolean(snapshot.answered);
+
     return this.hasProgress();
   }
 
