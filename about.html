@@ -1,84 +1,76 @@
 <!doctype html>
 <html lang="en" dir="ltr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="About Steem Flags">
-  <title>About - Steem Flags</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-  <link rel="stylesheet" href="css/style.css?v=20260819-09">
+<title>About - Steem Flags</title>
+
+<link rel="stylesheet" href="css/style.css?v=20260819-09">
 </head>
 
 <body>
 
-<div id="app" class="appShell">
-
-<section class="card hero">
-
-  <header class="topBar">
-    <button id="menuButton" class="menuButton">☰</button>
-
-    <img src="assets/logo.png" class="logo" alt="Steem Flags">
-
-  </header>
-
-
-  <div id="menu" class="menu" hidden>
-    <a href="index.html">🏠 Home</a>
-    <a href="about.html">ℹ️ About</a>
-  </div>
-
-
-  <section class="assetStats">
-
-    <div>
-      <span>SF</span>
-      <strong id="sfValue">0</strong>
-    </div>
-
-    <div>
-      <span>STEEM</span>
-      <strong id="steemValue">0</strong>
-    </div>
-
-  </section>
-
-
-  <h1>About Steem Flags</h1>
-
-  <p>
-    Steem Flags is a flag guessing game built on the Steem ecosystem.
-  </p>
-
-  <p>
-    Guess the flags correctly and earn SF rewards.
-  </p>
-
-  <p>
-    Players compete through the Point Leaderboard and improve their ranking.
-  </p>
-
-
-  <hr>
-
-  <p>
-    Developed by Mehdi Q.
-  </p>
-
-</section>
-
+<div id="app">
+  <main class="appShell">
+    <section class="card hero">
+      Loading...
+    </section>
+  </main>
 </div>
 
 
 <script>
-const menuButton=document.getElementById("menuButton");
-const menu=document.getElementById("menu");
+async function loadAbout(){
 
-menuButton.onclick=()=>{
-  menu.hidden=!menu.hidden;
-};
+const app=document.getElementById("app");
+
+const shell=await fetch("./components/app-shell.html?v="+Date.now());
+app.innerHTML=await shell.text();
+
+
+const home=document.getElementById("homeView");
+const login=document.getElementById("loginView");
+const game=document.getElementById("gameView");
+
+
+if(home) home.hidden=false;
+if(login) login.hidden=true;
+if(game) game.hidden=true;
+
+
+home.innerHTML=`
+
+<section class="card">
+
+<h1>ℹ️ About Steem Flags</h1>
+
+<p>
+Steem Flags is a flag guessing game built for the Steem ecosystem.
+</p>
+
+<p>
+Players answer 20 flag questions and earn SF rewards.
+</p>
+
+<p>
+Your progress is tracked through the Point Leaderboard.
+</p>
+
+<hr>
+
+<p>
+Developed by Mehdi Q.
+</p>
+
+</section>
+
+`;
+
+}
+
+loadAbout();
 </script>
-
 
 </body>
 </html>
