@@ -1,12 +1,13 @@
 {
   "version": 1,
-  "updated_at": "2026-08-19T01:10:01.385672Z",
+  "updated_at": "2026-08-19T04:55:53.050552Z",
   "players": {
     "do2earn": {
-      "sf": 20
+      "sf": 40
     }
   },
   "processed_events": [
-    "do2earn-1787098144411-be7a562d31124470aa02548d5a8046ff"
+    "do2earn-1787098144411-be7a562d31124470aa02548d5a8046ff",
+    "do2earn-1787111709232-72c4dfa9-8028-482c-aa35-d982168b7864"
   ]
 }
