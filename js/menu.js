@@ -2,7 +2,7 @@ export async function loadMenu(){
     const container = document.getElementById("menuContainer");
     if(!container) return;
 
-    const response = await fetch("./components/menu.html?v=20260820-07", {
+    const response = await fetch("./components/menu.html?v=20260820-08", {
         cache:"no-store"
     });
 
@@ -20,12 +20,11 @@ export async function loadMenu(){
 
     menuButton.onclick = (event) => {
         event.stopPropagation();
-        const willOpen = menu.hidden;
-        menu.hidden = !willOpen;
-        menuButton.setAttribute("aria-expanded", String(willOpen));
+        menu.hidden = !menu.hidden;
+        menuButton.setAttribute("aria-expanded", String(!menu.hidden));
     };
 
-    menu.addEventListener("click", async (event) => {
+    menu.addEventListener("click", (event) => {
         const actionLink = event.target.closest("[data-action]");
         if(!actionLink) return;
 
@@ -33,33 +32,26 @@ export async function loadMenu(){
 
         if(action === "new-game"){
             event.preventDefault();
-            document.getElementById("newGameButton")?.click();
+            window.dispatchEvent(new CustomEvent("steemflags:new-game"));
             closeMenu();
         }
 
         if(action === "resume-game"){
             event.preventDefault();
-            document.getElementById("resumeGameButton")?.click();
+            window.dispatchEvent(new CustomEvent("steemflags:resume-game"));
             closeMenu();
         }
 
         if(action === "logout"){
             event.preventDefault();
-            const { clearStoredUsername } = await import("./storage.js");
-            clearStoredUsername();
-            window.location.href = "./";
+            window.dispatchEvent(new CustomEvent("steemflags:logout"));
+            closeMenu();
         }
     });
 
     document.addEventListener("click", (event) => {
         if(!menu.hidden && !menu.contains(event.target) && !menuButton.contains(event.target)){
             closeMenu();
-        }
-    });
-
-    menu.addEventListener("click", (event) => {
-        if(!event.target.closest("[data-action]")){
-            event.stopPropagation();
         }
     });
 }
