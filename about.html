@@ -21,32 +21,82 @@
 
 <script type="module">
 
-async function loadAbout(){
+import { getStoredUsername, getStoredSF } from './js/storage.js';
+
+
+async function loadAboutPage(){
 
     const app = document.getElementById("app");
+
 
     const response = await fetch(
         "./components/app-shell.html?v=20260819-10",
         {cache:"no-store"}
     );
 
+
     app.innerHTML = await response.text();
 
 
-    // نمایش صفحه About داخل همان قالب اصلی
-    const homeView = document.getElementById("homeView");
 
-    if(homeView){
+    // نمایش دارایی‌ها
+    const assets = document.getElementById("assetStats");
 
-        homeView.hidden = false;
+    if(assets){
+        assets.hidden = false;
+    }
 
-        homeView.innerHTML = `
+
+    const username = getStoredUsername();
+
+    const sf = document.getElementById("sfValue");
+
+    if(sf){
+
+        sf.textContent = getStoredSF(username);
+
+    }
+
+
+
+    // فعال کردن منوی همبرگری
+    const menuButton = document.getElementById("menuButton");
+
+    const menu = document.getElementById("menu");
+
+
+    if(menuButton && menu){
+
+        menuButton.addEventListener("click", ()=>{
+
+            menu.hidden = !menu.hidden;
+
+            menuButton.setAttribute(
+                "aria-expanded",
+                String(!menu.hidden)
+            );
+
+        });
+
+    }
+
+
+
+    // جایگزینی محتوای About
+    const loginView = document.getElementById("loginView");
+
+    if(loginView){
+
+        loginView.hidden = false;
+
+
+        loginView.innerHTML = `
 
         <section class="card hero">
 
-            <p class="eyebrow">
-                STEEM FLAGS
-            </p>
+            <img class="gameLogo logoMedium"
+                 src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png"
+                 alt="Steem Flags logo">
 
 
             <h1>
@@ -71,6 +121,10 @@ async function loadAbout(){
             </p>
 
 
+            <a href="./" class="primary">
+                Back to Game
+            </a>
+
         </section>
 
         `;
@@ -78,25 +132,10 @@ async function loadAbout(){
     }
 
 
-    // فعال کردن منوی همبرگری
-    const menuButton=document.getElementById("menuButton");
-    const menu=document.getElementById("menu");
-
-    if(menuButton && menu){
-
-        menuButton.onclick=()=>{
-
-            menu.hidden=!menu.hidden;
-
-        };
-
-    }
-
-
 }
 
 
-loadAbout();
+loadAboutPage();
 
 </script>
 
