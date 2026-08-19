@@ -1,4 +1,5 @@
 import { loadState, saveState, resetState, refreshDailyEnergy, getStoredUsername, setStoredUsername, clearStoredUsername, getStoredSF } from './storage.js';
+import { refreshLeaderboardSF } from './sf-balance.js?v=20260820-01';
 import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
@@ -16,31 +17,18 @@ async function loadLeaderboard(){try{await import(`./leaderboard.js?v=${Date.now
 async function fetchSteemBalance(account){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[account]]});const endpoints=['https://api.steemit.com','https://api.steem.house','https://api.steemyy.com','https://api.steemworld.org'];for(const endpoint of endpoints){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)continue;const p=await r.json();const b=p?.result?.[0]?.balance;if(typeof b==='string'&&/\d/.test(b))return b.replace(/\s*STEEM\s*$/i,'').trim()}catch(e){console.warn('STEEM balance endpoint failed',endpoint,e)}}return null}
 async function refreshSteemBalance(account,element){if(!account||!element)return;const balance=await fetchSteemBalance(account);if(balance!==null)element.textContent=balance}
 async function bootstrap(){
-
 try{
-
-$('app').innerHTML =
-await loadComponent();
-
+$('app').innerHTML = await loadComponent();
 await loadMenu();
-
 await loadLeaderboard();
-
 start();
-
-}catch(e){
-
-console.error(e);
-
-}
-
-}
+}catch(e){console.error(e);}}
 function start(){let username=getStoredUsername(),state=loadState(username),progress=loadProgress(username),postingKey=null;const loginView=$('loginView'),home=$('homeView'),lb=$('leaderboardSection'),gameView=$('gameView'),answers=$('answers'),feedback=$('feedback'),next=$('nextButton'),energy=$('energyValue'),sf=$('sfValue'),steem=$('steemValue'),assets=$('assetStats'),counter=$('questionCounter'),score=$('scoreLabel'),flag=$('flagImage'),newBtn=$('newGameButton'),resumeBtn=$('resumeGameButton'),summary=$('progressSummary'),menu=$('menu'),menuBtn=$('menuButton'),loginForm=$('loginForm'),usernameInput=$('usernameInput'),loginFeedback=$('loginFeedback'),loggedIn=$('loggedInUser'),logout=document.querySelector('[data-action="logout"]'),lang=$('languageSelect'),bar=$('quizProgressBar'),info=$('countryInfoLink');let key=$('postingKeyInput');if(!key){key=document.createElement('input');key.id='postingKeyInput';key.type='password';key.required=true;loginForm.insertBefore(key,$('loginButton'))}const game=new FlagGame(renderQuestion);let answered=false;
 function hideInfo(){info.hidden=true;info.removeAttribute('href');info.setAttribute('aria-hidden','true');info.tabIndex=-1;info.style.setProperty('display','none','important')}
 function basicUrl(name){const code=getLanguage()==='fa'?'fa':getLanguage()==='es'?'es':'en';return `https://${code}.wikipedia.org/wiki/${encodeURIComponent(String(name).trim().replace(/ /g,'_'))}`}
 async function localizedUrl(name){const code=getLanguage()==='fa'?'fa':getLanguage()==='es'?'es':'en';if(code==='en')return basicUrl(name);try{const r=await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=langlinks&lllang=${code}&lllimit=1&format=json&origin=*&titles=${encodeURIComponent(String(name).trim().replace(/ /g,'_'))}`,{cache:'no-store'});const d=await r.json();const p=Object.values(d?.query?.pages||{});const title=p[0]?.langlinks?.[0]?.['*'];if(title)return `https://${code}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g,'_'))}`}catch{}return `https://${code}.wikipedia.org/w/index.php?search=${encodeURIComponent(name)}`}
 function showInfo(name){info.textContent='ℹ️ More information about this country';info.href=basicUrl(name);info.hidden=false;info.setAttribute('aria-hidden','false');info.tabIndex=0;info.style.setProperty('display','block','important');localizedUrl(name).then(url=>{if(!info.hidden)info.href=url})}
-function stats(){if(username){state=loadState(username);state=refreshDailyEnergy(state,username)}energy.textContent=state.energy;sf.textContent=getStoredSF(username);newBtn.disabled=!username||state.energy<=0;assets.hidden=!username;summary.hidden=!username;resumeBtn.hidden=!Boolean(username&&loadIncompleteGame(username));if(username)summary.textContent=`${t('gamesLabel')}: ${progress.games} · ${t('accuracyLabel')}: ${accuracy(progress)}%`;loggedIn.textContent=username?`${t('loggedInAs')} @${username}`:''}
+function stats(){if(username){state=loadState(username);state=refreshDailyEnergy(state,username)}energy.textContent=state.energy;sf.textContent='…';refreshLeaderboardSF(username,sf);newBtn.disabled=!username||state.energy<=0;assets.hidden=!username;summary.hidden=!username;resumeBtn.hidden=!Boolean(username&&loadIncompleteGame(username));if(username)summary.textContent=`${t('gamesLabel')}: ${progress.games} · ${t('accuracyLabel')}: ${accuracy(progress)}%`;loggedIn.textContent=username?`${t('loggedInAs')} @${username}`:''}
 function progressBar(n){const v=Math.max(0,Math.min(game.totalQuestions,Number(n)||0));bar.style.width=`${v/game.totalQuestions*100}%`;bar.setAttribute('aria-valuenow',v)}
 function renderQuestion(q,points,n){answered=false;counter.textContent=`${t('question')} ${n} ${t('of')} ${game.totalQuestions}`;score.textContent=`${t('score')}: ${points}`;progressBar(n);flag.textContent=q.country[1];answers.replaceChildren();feedback.textContent='';feedback.className='feedback';hideInfo();next.hidden=true;q.options.forEach(([name])=>{const b=document.createElement('button');b.type='button';b.className='answer';b.textContent=name;b.disabled=false;b.onclick=()=>choose(b,name);answers.appendChild(b)})}
 function restore(){if(!game.current)return;const finalQuestion=game.questionNumber>=game.totalQuestions;if(finalQuestion&&!game.completed)game.answered=false;answered=finalQuestion&&!game.completed?false:game.answered;counter.textContent=`${t('question')} ${game.questionNumber} ${t('of')} ${game.totalQuestions}`;score.textContent=`${t('score')}: ${game.score}`;progressBar(game.questionNumber);flag.textContent=game.current.country[1];answers.replaceChildren();game.current.options.forEach(([name])=>{const b=document.createElement('button');b.type='button';b.className='answer';b.textContent=name;b.disabled=answered;b.onclick=()=>choose(b,name);answers.appendChild(b)});if(answered){if(game.current)game.current.options.forEach(([name])=>{if(name===game.current.country[0]){const el=[...answers.children].find(x=>x.textContent===name);if(el)el.classList.add('correct')}});feedback.textContent=`${t('score')}: ${game.score}`;showInfo(game.current.country[0]);next.hidden=false}else{feedback.textContent='';hideInfo();next.hidden=true}}
