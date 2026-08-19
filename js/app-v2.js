@@ -3,7 +3,7 @@ import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
-import { broadcastSFReward } from './reward.js?v=20260819-11';
+import { broadcastSFReward } from './reward.js?v=20260819-12';
 const $ = (id) => document.getElementById(id);
 const GAME_STATE_PREFIX = 'steemFlags.incompleteGame.v2_';
 const gameStateKey = (username) => `${GAME_STATE_PREFIX}${encodeURIComponent(String(username).trim().toLowerCase())}`;
