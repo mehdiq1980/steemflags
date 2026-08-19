@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <meta name="theme-color" content="#080d1a">
-  <meta name="description" content="About Steem Flags — Guess the flags and earn SF.">
+  <meta name="description" content="About Steem Flags">
 
   <title>About - Steem Flags</title>
 
@@ -16,58 +16,89 @@
 
 <body>
 
-<div id="app">
-
-  <main class="appShell">
-
-    <section class="card hero">
-
-      <p class="eyebrow">
-        STEEM FLAGS
-      </p>
+<div id="app"></div>
 
 
-      <h1 id="aboutTitle">
-        About Steem Flags
-      </h1>
+<script type="module">
+
+async function loadAbout(){
+
+    const app = document.getElementById("app");
+
+    const response = await fetch(
+        "./components/app-shell.html?v=20260819-10",
+        {cache:"no-store"}
+    );
+
+    app.innerHTML = await response.text();
 
 
-      <div id="aboutText" class="muted">
+    // نمایش صفحه About داخل همان قالب اصلی
+    const homeView = document.getElementById("homeView");
 
-        <p>
-          Steem Flags is a flag guessing game where players
-          test their knowledge of world flags and earn SF rewards.
-        </p>
+    if(homeView){
 
-        <p>
-          Players answer flag questions, collect points,
-          and compete on the leaderboard.
-        </p>
+        homeView.hidden = false;
 
-        <p>
-          Developed by Mehdi Q.
-        </p>
+        homeView.innerHTML = `
 
-      </div>
+        <section class="card hero">
+
+            <p class="eyebrow">
+                STEEM FLAGS
+            </p>
 
 
-      <a href="index.html" class="btn">
-        Back to Game
-      </a>
+            <h1>
+                About Steem Flags
+            </h1>
 
 
-    </section>
+            <p class="muted">
+                Steem Flags is a flag guessing game where players
+                test their knowledge of world flags and earn SF rewards.
+            </p>
 
-  </main>
 
-</div>
+            <p class="muted">
+                Players answer questions, collect SF,
+                and compete on the leaderboard.
+            </p>
 
 
-<!-- ساخت هدر، منوی همبرگری و SF -->
-<script type="module" src="js/layout.js?v=20260819-09"></script>
+            <p class="muted">
+                Developed by Mehdi Q.
+            </p>
 
-<!-- متن و ترجمه About -->
-<script src="js/about.js?v=20260819-09"></script>
+
+        </section>
+
+        `;
+
+    }
+
+
+    // فعال کردن منوی همبرگری
+    const menuButton=document.getElementById("menuButton");
+    const menu=document.getElementById("menu");
+
+    if(menuButton && menu){
+
+        menuButton.onclick=()=>{
+
+            menu.hidden=!menu.hidden;
+
+        };
+
+    }
+
+
+}
+
+
+loadAbout();
+
+</script>
 
 
 </body>
