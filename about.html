@@ -1,80 +1,181 @@
 <!doctype html>
 <html lang="en" dir="ltr">
+
 <head>
+
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>About - Steem Flags</title>
 
-<link rel="stylesheet" href="css/style.css?v=20260819-09">
+<link rel="stylesheet"
+href="css/style.css?v=20260819-09">
+
 </head>
+
 
 <body>
 
-<div id="app">
-  <main class="appShell">
-    <section class="card hero">
-      Loading...
-    </section>
-  </main>
+
+<main class="appShell">
+
+
+<section class="card hero">
+
+
+<header class="topBar">
+
+
+<button id="menuButton"
+class="menuButton">
+☰
+</button>
+
+
+<img src="assets/logo.png"
+class="logo"
+alt="Steem Flags">
+
+
+</header>
+
+
+
+<nav id="menu"
+class="menu"
+hidden>
+
+<a href="index.html">
+🏠 Home
+</a>
+
+<a href="about.html">
+ℹ️ About
+</a>
+
+</nav>
+
+
+
+<section id="assetStats"
+class="assetStats">
+
+
+<div>
+<span>SF</span>
+<strong id="sfValue">
+0
+</strong>
 </div>
 
-  <script src="https://unpkg.com/dsteem@0.11.3/dist/dsteem.js"></script>
-<script src="js/config.js?v=20260819-09"></script>
-<script src="js/standard-flags.js?v=20260819-09"></script>
-<script type="module" src="js/app-v2.js?v=20260819-09"></script>
 
-<script>
-async function loadAbout(){
-
-const app=document.getElementById("app");
-
-const shell=await fetch("./components/app-shell.html?v="+Date.now());
-app.innerHTML=await shell.text();
+<div>
+<span>STEEM</span>
+<strong id="steemValue">
+0
+</strong>
+</div>
 
 
-const home=document.getElementById("homeView");
-const login=document.getElementById("loginView");
-const game=document.getElementById("gameView");
+</section>
 
 
-if(home) home.hidden=false;
-if(login) login.hidden=true;
-if(game) game.hidden=true;
 
 
-home.innerHTML=`
+<h1>
+About Steem Flags
+</h1>
+
+
 
 <section class="card">
 
-<h1>ℹ️ About Steem Flags</h1>
+
+<h2>
+🎮 Guess the Flags & Earn SF
+</h2>
+
 
 <p>
 Steem Flags is a flag guessing game built for the Steem ecosystem.
 </p>
 
+
 <p>
-Players answer 20 flag questions and earn SF rewards.
+Players answer 20 questions and earn SF rewards.
 </p>
+
 
 <p>
 Your progress is tracked through the Point Leaderboard.
 </p>
 
-<hr>
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+🏆 Leaderboard
+</h2>
+
+
+<p>
+Compete with other players and improve your ranking.
+</p>
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+👨‍💻 Developer
+</h2>
+
 
 <p>
 Developed by Mehdi Q.
 </p>
 
+
 </section>
 
-`;
 
-}
 
-loadAbout();
-</script>
+
+<a href="index.html"
+class="button">
+
+⬅ Back to Game
+
+</a>
+
+
+
+</section>
+
+
+</main>
+
+
+
+<script src="js/about.js?v=1"></script>
+
 
 </body>
+
 </html>
