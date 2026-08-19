@@ -1,5 +1,12 @@
 {
   "version": 1,
-  "updated_at": "2026-08-19T00:00:00Z",
-  "players": {}
+  "updated_at": "2026-08-19T01:10:01.385672Z",
+  "players": {
+    "do2earn": {
+      "sf": 20
+    }
+  },
+  "processed_events": [
+    "do2earn-1787098144411-be7a562d31124470aa02548d5a8046ff"
+  ]
 }
