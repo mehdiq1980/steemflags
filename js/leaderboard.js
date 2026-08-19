@@ -30,9 +30,11 @@ function render(rows) {
   const rewardPool = `<div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
   const leaderboardTitle = `<h2>${LEADERBOARD_TITLE}</h2>`;
 
-  if (!rows.length) {
-    root.innerHTML = `${leaderboardTitle}${rewardPool}<p class="muted">${t('leaderboardEmpty')}</p>`;
-    return;
+  if (!document.getElementById('rewardPoolStyle')) {
+    const style = document.createElement('style');
+    style.id = 'rewardPoolStyle';
+    style.textContent = `.rewardPool{margin:12px 0 18px;padding:16px;border:2px solid rgba(255,255,255,.25);border-radius:22px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a);}.rewardPool h3{margin:0 0 12px;font-size:18px}.rewardPool p{margin:6px 0;font-size:15px}`;
+    document.head.appendChild(style);
   }
 
   root.innerHTML = `${leaderboardTitle}${rewardPool}<table><thead><tr><th class="rank">${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
