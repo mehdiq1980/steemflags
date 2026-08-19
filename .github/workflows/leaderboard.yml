@@ -1,0 +1,27 @@
+name: Process Steem Flags rewards
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  process-rewards:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Process reward queue
+        run: python3 scripts/process_rewards.py
+
+      - name: Commit leaderboard changes
+        run: |
+          git config user.name "steemflags-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/leaderboard.json data/rewards/pending.json
+          git diff --cached --quiet || git commit -m "Process Steem Flags rewards"
+          git push
