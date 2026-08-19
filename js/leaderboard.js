@@ -21,15 +21,7 @@ function render(rows) {
     return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${avatar}" alt="@${username}"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
   }).join('');
 
-  if(!document.getElementById('rewardPoolStyle')){
-    const style=document.createElement('style');
-    style.id='rewardPoolStyle';
-    style.textContent=`.rewardPool{margin:12px 0 18px;padding:16px;border:1px solid rgba(255,255,255,.28);border-radius:24px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a);box-shadow:0 4px 12px rgba(0,0,0,.15)}.rewardPool h3{margin:0 0 12px;font-size:18px}.rewardPool p{margin:6px 0;font-size:15px;text-align:left}`;
-    document.head.appendChild(style);
-  }
-
-  const rewardPool=`<div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
-  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2>${rewardPool}<table><thead><tr><th>${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
+  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2><table><thead><tr><th>${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 async function loadLeaderboard(){
@@ -39,7 +31,7 @@ async function loadLeaderboard(){
   const rows=Object.entries(data.players||{}).map(([username,value])=>({username,sf:Number(value?.sf||0),avatar:value?.avatar})).sort((a,b)=>b.sf-a.sf).slice(0,100);
   render(rows);
  }catch(e){
-  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2><div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
+  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2>`;
  }
 }
 
