@@ -9,55 +9,38 @@ function avatarUrl(username) {
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>\'\"]/g, character => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-  }[character]));
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value);
+  return String(value).replace(/[&<>\'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
 
 function render(rows) {
-  const body = rows.map((row, index) => {
-    const username = String(row.username || '—');
-    const sf = Number(row.sf || 0);
-    const avatar = row.avatar || avatarUrl(username);
-    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : String(index + 1);
-    return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${escapeAttribute(avatar)}" alt="@${escapeAttribute(username)}" loading="lazy" referrerpolicy="no-referrer"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
+  const body = rows.map((row,index)=>{
+    const username=String(row.username||'—');
+    const sf=Number(row.sf||0);
+    const avatar=row.avatar||avatarUrl(username);
+    const medal=index===0?'🥇':index===1?'🥈':index===2?'🥉':String(index+1);
+    return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${avatar}" alt="@${username}"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
   }).join('');
 
-  const rewardPool = `<div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
-  const leaderboardTitle = `<h2>${LEADERBOARD_TITLE}</h2>`;
-
-  if (!document.getElementById('rewardPoolStyle')) {
-    const style = document.createElement('style');
-    style.id = 'rewardPoolStyle';
-    style.textContent = `.rewardPool{margin:12px 0 18px;padding:16px;border:1px solid rgba(255,255,255,.28);border-radius:24px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a);box-shadow:0 4px 12px rgba(0,0,0,.15);}.rewardPool h3{margin:0 0 12px;font-size:18px}.rewardPool p{margin:6px 0;font-size:15px}`;
+  if(!document.getElementById('rewardPoolStyle')){
+    const style=document.createElement('style');
+    style.id='rewardPoolStyle';
+    style.textContent=`.rewardPool{margin:12px 0 18px;padding:16px;border:1px solid rgba(255,255,255,.28);border-radius:24px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a);box-shadow:0 4px 12px rgba(0,0,0,.15)}.rewardPool h3{margin:0 0 12px;font-size:18px}.rewardPool p{margin:6px 0;font-size:15px;text-align:left}`;
     document.head.appendChild(style);
   }
 
-  root.innerHTML = `${leaderboardTitle}${rewardPool}<table><thead><tr><th class="rank">${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
+  const rewardPool=`<div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
+  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2>${rewardPool}<table><thead><tr><th>${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
-async function loadLeaderboard() {
-  try {
-    const response = await fetch(`${DATA_URL}?v=${Date.now()}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Leaderboard HTTP ${response.status}`);
-    const data = await response.json();
-    const players = data && typeof data.players === 'object' ? data.players : {};
-
-    const rows = Object.entries(players)
-      .map(([username, value]) => ({ username, sf: Number(value?.sf || 0), avatar: value?.avatar }))
-      .filter(row => Number.isFinite(row.sf))
-      .sort((a, b) => b.sf - a.sf || a.username.localeCompare(b.username))
-      .slice(0, 100);
-
-    render(rows);
-  } catch (error) {
-    console.warn('GitHub leaderboard unavailable:', error);
-    root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div><p class="muted">${t('leaderboardUnavailable')}</p>`;
-  }
+async function loadLeaderboard(){
+ try{
+  const response=await fetch(`${DATA_URL}?v=${Date.now()}`,{cache:'no-store'});
+  const data=await response.json();
+  const rows=Object.entries(data.players||{}).map(([username,value])=>({username,sf:Number(value?.sf||0),avatar:value?.avatar})).sort((a,b)=>b.sf-a.sf).slice(0,100);
+  render(rows);
+ }catch(e){
+  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2><div class="rewardPool"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
+ }
 }
 
-if (root) loadLeaderboard();
+if(root) loadLeaderboard();
