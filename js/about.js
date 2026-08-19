@@ -1,48 +1,78 @@
-const $ = (id) => document.getElementById(id);
+// js/about.js
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const translations = {
+        en: {
+            title: "About Steem Flags",
+            text: `
+                Steem Flags is a flag guessing game where players test their knowledge
+                of world flags and earn SF rewards.
+                <br><br>
+                The game includes multiple languages, a leaderboard system,
+                and a reward mechanism for active players.
+                <br><br>
+                Developed by Mehdi Q.
+            `
+        },
+
+        fa: {
+            title: "درباره Steem Flags",
+            text: `
+                Steem Flags یک بازی حدس پرچم است که بازیکنان در آن
+                دانش خود درباره پرچم کشورهای جهان را آزمایش می‌کنند و SF دریافت می‌کنند.
+                <br><br>
+                این بازی دارای چند زبان، سیستم لیدربورد و سیستم پاداش برای بازیکنان فعال است.
+                <br><br>
+                توسعه‌دهنده: Mehdi Q.
+            `
+        },
+
+        es: {
+            title: "Acerca de Steem Flags",
+            text: `
+                Steem Flags es un juego de adivinar banderas donde los jugadores
+                ponen a prueba sus conocimientos y reciben recompensas SF.
+                <br><br>
+                El juego incluye varios idiomas, tabla de clasificación
+                y sistema de recompensas.
+                <br><br>
+                Desarrollado por Mehdi Q.
+            `
+        }
+    };
 
 
-// Hamburger menu
-const menuButton = $("menuButton");
-const menu = $("menu");
+    function loadLanguage() {
 
-if (menuButton && menu) {
-  menuButton.addEventListener("click", () => {
-    menu.hidden = !menu.hidden;
-  });
-}
+        const lang = localStorage.getItem("steemFlagsLanguage") || "en";
 
+        const aboutTitle = document.getElementById("aboutTitle");
+        const aboutText = document.getElementById("aboutText");
 
-// Load stored SF
-function loadSF() {
-  try {
-    const username = localStorage.getItem("steemFlagsUsername");
-
-    if (!username) {
-      $("sfValue").textContent = "0";
-      return;
+        if (aboutTitle && aboutText) {
+            aboutTitle.innerHTML = translations[lang].title;
+            aboutText.innerHTML = translations[lang].text;
+        }
     }
 
-    const data = JSON.parse(
-      localStorage.getItem(`steemFlagsState_${username}`)
-    );
 
-    $("sfValue").textContent = data?.sf ?? 0;
-
-  } catch {
-    $("sfValue").textContent = "0";
-  }
-}
+    loadLanguage();
 
 
-// Load STEEM balance placeholder
-function loadSTEEM() {
-  const el = $("steemValue");
+    // هماهنگی با تغییر زبان در صفحه
+    document.querySelectorAll("[data-lang]").forEach(button => {
 
-  if (el) {
-    el.textContent = "0";
-  }
-}
+        button.addEventListener("click", () => {
 
+            const lang = button.dataset.lang;
 
-loadSF();
-loadSTEEM();
+            localStorage.setItem("steemFlagsLanguage", lang);
+
+            loadLanguage();
+
+        });
+
+    });
+
+});
