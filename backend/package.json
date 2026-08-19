@@ -1,8 +1,0 @@
-{
-  "name": "steemflags-leaderboard-api",
-  "private": true,
-  "type": "module",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { "cors": "^2.8.5", "express": "^5.1.0", "pg": "^8.16.3" },
-  "engines": { "node": ">=20" }
-}
