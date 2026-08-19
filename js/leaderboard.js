@@ -2,12 +2,7 @@ import { t } from './i18n.js';
 
 const root = document.getElementById('leaderboard');
 const LEADERBOARD_TITLE = '🏆 Steem Flags Leaderboard';
-const USER_KEY = 'steemflags.username';
 const DATA_URL = './data/leaderboard.json';
-
-function currentUser() {
-  return String(localStorage.getItem(USER_KEY) || '').trim().toLowerCase();
-}
 
 function avatarUrl(username) {
   return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;
@@ -23,7 +18,7 @@ function escapeAttribute(value) {
   return escapeHtml(value);
 }
 
-function render(rows, me) {
+function render(rows) {
   if (!rows.length) {
     root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><p class="muted">${t('leaderboardEmpty')}</p>`;
     return;
@@ -37,9 +32,7 @@ function render(rows, me) {
     return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${escapeAttribute(avatar)}" alt="@${escapeAttribute(username)}" loading="lazy" referrerpolicy="no-referrer"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
   }).join('');
 
-  const mine = me ? `<div class="leaderboardMe"><img class="leaderAvatar" src="${escapeAttribute(me.avatar || avatarUrl(me.username))}" alt="@${escapeAttribute(me.username)}"><div><strong>Your Rank: #${Number(me.rank).toLocaleString()}</strong><span>Your SF: ${Number(me.sf).toLocaleString()} SF</span></div></div>` : '';
-
-  root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><table><thead><tr><th class="rank">${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>${mine}`;
+  root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><table><thead><tr><th class="rank">${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 async function loadLeaderboard() {
@@ -55,10 +48,7 @@ async function loadLeaderboard() {
       .sort((a, b) => b.sf - a.sf || a.username.localeCompare(b.username))
       .slice(0, 100);
 
-    const username = currentUser();
-    const myIndex = rows.findIndex(row => row.username === username);
-    const me = myIndex >= 0 ? { ...rows[myIndex], rank: myIndex + 1 } : null;
-    render(rows, me);
+    render(rows);
   } catch (error) {
     console.warn('GitHub leaderboard unavailable:', error);
     root.innerHTML = `<h2>${LEADERBOARD_TITLE}</h2><p class="muted">${t('leaderboardUnavailable')}</p>`;
