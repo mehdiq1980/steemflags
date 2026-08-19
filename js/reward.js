@@ -45,13 +45,9 @@ export function showClaimDialog({username,sf,eventId}){
   document.body.appendChild(overlay);
   overlay.querySelector('#sfClaimButton').addEventListener('click',()=>{
     const url=buildIssueUrl({username,sf,eventId});
-    const issueTab=window.open(url,'_blank','noopener,noreferrer');
-    if(!issueTab){
-      window.location.assign(url);
-      return;
-    }
+    window.open(url,'_blank','noopener,noreferrer');
     overlay.remove();
-    window.location.assign('./');
+    window.location.replace('./');
   });
 }
 
