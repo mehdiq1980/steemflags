@@ -2,7 +2,7 @@ export async function loadMenu(){
     const container = document.getElementById("menuContainer");
     if(!container) return;
 
-    const response = await fetch("./components/menu.html?v=20260820-06", {
+    const response = await fetch("./components/menu.html?v=20260820-07", {
         cache:"no-store"
     });
 
@@ -30,6 +30,18 @@ export async function loadMenu(){
         if(!actionLink) return;
 
         const action = actionLink.dataset.action;
+
+        if(action === "new-game"){
+            event.preventDefault();
+            document.getElementById("newGameButton")?.click();
+            closeMenu();
+        }
+
+        if(action === "resume-game"){
+            event.preventDefault();
+            document.getElementById("resumeGameButton")?.click();
+            closeMenu();
+        }
 
         if(action === "logout"){
             event.preventDefault();
