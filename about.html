@@ -1,145 +1,50 @@
 <!doctype html>
 <html lang="en" dir="ltr">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
   <meta name="theme-color" content="#080d1a">
   <meta name="description" content="About Steem Flags">
-
   <title>About - Steem Flags</title>
-
   <link rel="stylesheet" href="css/style.css?v=20260819-09">
 </head>
-
-
 <body>
-
 <div id="app"></div>
-
-
 <script type="module">
-
-import { getStoredUsername, getStoredSF } from './js/storage.js';
-
-
+import { getStoredUsername } from './js/storage.js';
+import { refreshLeaderboardSF } from './js/sf-balance.js?v=20260820-01';
 async function loadAboutPage(){
-
     const app = document.getElementById("app");
-
-
-    const response = await fetch(
-        "./components/app-shell.html?v=20260819-10",
-        {cache:"no-store"}
-    );
-
-
+    const response = await fetch("./components/app-shell.html?v=20260819-10", {cache:"no-store"});
     app.innerHTML = await response.text();
-
-
-
-    // نمایش دارایی‌ها
     const assets = document.getElementById("assetStats");
-
-    if(assets){
-        assets.hidden = false;
-    }
-
-
+    if(assets) assets.hidden = false;
     const username = getStoredUsername();
-
     const sf = document.getElementById("sfValue");
-
-    if(sf){
-
-        sf.textContent = getStoredSF(username);
-
-    }
-
-
-
-    // فعال کردن منوی همبرگری
+    if(sf) await refreshLeaderboardSF(username, sf);
     const menuButton = document.getElementById("menuButton");
-
     const menu = document.getElementById("menu");
-
-
     if(menuButton && menu){
-
         menuButton.addEventListener("click", ()=>{
-
             menu.hidden = !menu.hidden;
-
-            menuButton.setAttribute(
-                "aria-expanded",
-                String(!menu.hidden)
-            );
-
+            menuButton.setAttribute("aria-expanded", String(!menu.hidden));
         });
-
     }
-
-
-
-    // جایگزینی محتوای About
     const loginView = document.getElementById("loginView");
-
     if(loginView){
-
         loginView.hidden = false;
-
-
         loginView.innerHTML = `
-
         <section class="card hero">
-
-            <img class="gameLogo logoMedium"
-                 src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png"
-                 alt="Steem Flags logo">
-
-
-            <h1>
-                About Steem Flags
-            </h1>
-
-
-            <p class="muted">
-                Steem Flags is a flag guessing game where players
-                test their knowledge of world flags and earn SF rewards.
-            </p>
-
-
-            <p class="muted">
-                Players answer questions, collect SF,
-                and compete on the leaderboard.
-            </p>
-
-
-            <p class="muted">
-                Developed by Mehdi Q.
-            </p>
-
-
-            <a href="./" class="primary">
-                Back to Game
-            </a>
-
-        </section>
-
-        `;
-
+            <img class="gameLogo logoMedium" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags logo">
+            <h1>About Steem Flags</h1>
+            <p class="muted">Steem Flags is a flag guessing game where players test their knowledge of world flags and earn SF rewards.</p>
+            <p class="muted">Players answer questions, collect SF, and compete on the leaderboard.</p>
+            <p class="muted">Developed by Mehdi Q.</p>
+            <a href="./" class="primary">Back to Game</a>
+        </section>`;
     }
-
-
 }
-
-
 loadAboutPage();
-
 </script>
-
-
 </body>
-
 </html>
