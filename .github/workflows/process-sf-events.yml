@@ -29,7 +29,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         shell: python
         run: |
-          import datetime, json, os, pathlib, re, sys
+          import datetime, hashlib, json, os, pathlib, re, sys
 
           body = os.environ.get('ISSUE_BODY', '')
           issue_number = os.environ['ISSUE_NUMBER']
@@ -43,21 +43,38 @@ jobs:
           event_type = field('type')
           delta_text = field('sf_delta')
           created_at = field('created_at')
+          nonce = field('nonce')
+          proof = field('proof')
 
           errors = []
           if not re.fullmatch(r'[A-Za-z0-9._:-]{8,128}', event_id): errors.append('invalid event_id')
           if not re.fullmatch(r'[a-z0-9.-]{3,32}', username): errors.append('invalid username')
           if event_type not in {'game_result', 'reward'}: errors.append('invalid event type')
-          try: delta = int(delta_text)
-          except ValueError: delta = None
+          try:
+              delta = int(delta_text)
+          except ValueError:
+              delta = None
           if delta is None or delta == 0 or abs(delta) > 20: errors.append('invalid sf_delta')
+          if not re.fullmatch(r'[A-Za-z0-9_-]{8,128}', nonce): errors.append('invalid nonce')
+          if not re.fullmatch(r'[0-9a-f]{64}', proof): errors.append('invalid proof')
+
           try:
               dt = datetime.datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-              if abs((datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds()) > 86400: errors.append('timestamp outside 24h')
-          except ValueError: errors.append('invalid created_at')
+              age = abs((datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds())
+              if age > 86400: errors.append('timestamp outside 24h')
+          except ValueError:
+              errors.append('invalid created_at')
+
+          # Proof is only an integrity check: it prevents accidental corruption,
+          # but is NOT treated as a secret and therefore is not a full anti-cheat
+          # mechanism for a public static web game.
+          canonical = f'{event_id}|{username}|{event_type}|{delta}|{created_at}|{nonce}'
+          expected = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+          if proof != expected: errors.append('invalid proof')
 
           if errors:
-              print('Rejected:', ', '.join(errors)); sys.exit(1)
+              print('Rejected:', ', '.join(errors))
+              sys.exit(1)
 
           ledger_path = pathlib.Path('data/leaderboard.json')
           ledger = json.loads(ledger_path.read_text(encoding='utf-8'))
@@ -65,10 +82,12 @@ jobs:
           processed = set(ledger.setdefault('processed_events', []))
 
           if event_id in processed:
-              print('Duplicate event; no change.'); sys.exit(0)
+              print('Duplicate event; no change.')
+              sys.exit(0)
 
           player = players.setdefault(username, {'sf': 0})
-          player['sf'] = max(0, int(player.get('sf', 0)) + delta)
+          old_sf = int(player.get('sf', 0))
+          player['sf'] = max(0, old_sf + delta)
           processed.add(event_id)
           ledger['processed_events'] = sorted(processed)
           ledger['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
