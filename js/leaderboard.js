@@ -33,7 +33,7 @@ function render(rows) {
   if (!document.getElementById('rewardPoolStyle')) {
     const style = document.createElement('style');
     style.id = 'rewardPoolStyle';
-    style.textContent = `.rewardPool{margin:12px 0 18px;padding:16px;border:2px solid rgba(255,255,255,.25);border-radius:22px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a);}.rewardPool h3{margin:0 0 12px;font-size:18px}.rewardPool p{margin:6px 0;font-size:15px}`;
+    style.textContent = `.rewardPool{margin:12px 0 18px;padding:16px;border:1px solid rgba(255,255,255,.28);border-radius:24px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a);box-shadow:0 4px 12px rgba(0,0,0,.15);}.rewardPool h3{margin:0 0 12px;font-size:18px}.rewardPool p{margin:6px 0;font-size:15px}`;
     document.head.appendChild(style);
   }
 
