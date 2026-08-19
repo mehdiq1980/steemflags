@@ -46,7 +46,6 @@ function showClaimDialog({username,sf,eventId}){
         button.disabled=false;
         status.className='sfClaimStatus bad';
         status.textContent='Unable to submit reward. Please try again.';
-        resolve({ok:false,error});
       }
     });
   });
