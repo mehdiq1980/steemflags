@@ -13,14 +13,13 @@
 <script type="module">
 import { getStoredUsername } from './js/storage.js';
 import { refreshLeaderboardSF } from './js/sf-balance.js?v=20260820-02';
-import { loadMenu } from './js/menu.js?v=20260820-03';
+import { loadMenu } from './js/menu.js?v=20260820-05';
 
 async function loadAboutPage(){
     const app = document.getElementById('app');
     const response = await fetch('./components/app-shell.html?v=20260820-03', {cache:'no-store'});
     app.innerHTML = await response.text();
 
-    // About page only needs the header/menu and SF balance.
     document.getElementById('loginView')?.remove();
     document.getElementById('homeView')?.remove();
     document.getElementById('leaderboardSection')?.remove();
@@ -33,9 +32,13 @@ async function loadAboutPage(){
         <section class="aboutContent">
             <img class="gameLogo logoMedium" src="https://i.ibb.co/Fq0L0xWk/steemflags-logo.png" alt="Steem Flags logo">
             <h1>About Steem Flags</h1>
-            <p>Steem Flags is a flag guessing game where players test their knowledge of world flags and earn SF rewards.</p>
-            <p>Players answer questions, collect SF, and compete on the leaderboard.</p>
-            <p>Developed by Mehdi Q.</p>
+            <div class="aboutText">
+            <p>Steem Flags is a Web 3.0 game based on the Steem blockchain network in the quiz and educational genres, created and developed by Mehdi Q. from Persia.</p>
+            <p>In Steem Flags, players increase their geographical knowledge by answering questions about the flags of countries around the world and earn points in a competitive environment.</p>
+            <h2>Steem Flags Economy</h2>
+            <p>In Steem Flags, players can receive non-cashable in-game tokens called SF (Steem Flags) as rewards based on their daily energy component by participating in the game process and watching video ads (in the future). These rewards are calculated based on the player's performance, correct answers, and activity in the game.</p>
+            <p>By collecting SF, players can compete on the leaderboard and improve their position among other players. In the future, a weekly Steem reward pool will be activated in-game, distributing between 20 and 100 $STEEM to the top 5 players on the leaderboard, based on their SF holdings. The Steem Flags reward system is designed to incentivize further learning, active participation, and healthy competition.</p>
+            </div>
             <a href="./" class="primary">Back to Game</a>
         </section>`;
     }
@@ -48,7 +51,6 @@ async function loadAboutPage(){
         if(sf) await refreshLeaderboardSF(username, sf);
     }
 
-    // The shared menu loader owns the hamburger button and menu behavior.
     await loadMenu();
 }
 
@@ -59,10 +61,10 @@ loadAboutPage().catch(console.error);
     border:1px solid rgba(255,255,255,.18);
     border-radius:20px;
     padding:28px 22px;
-    text-align:center;
     max-width:760px;
     margin:0 auto;
 }
+.aboutText{text-align:left;}
 .aboutContent p{margin:12px 0;line-height:1.6}
 </style>
 </body>
