@@ -1,0 +1,98 @@
+name: Process Steem Flags SF events
+
+on:
+  push:
+    paths:
+      - 'data/game-events/*.json'
+      - 'data/leaderboard.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate event files and rebuild leaderboard
+        shell: python
+        run: |
+          import json
+          import pathlib
+          import datetime
+          import sys
+
+          root = pathlib.Path('.')
+          ledger_path = root / 'data' / 'leaderboard.json'
+          events_dir = root / 'data' / 'game-events'
+
+          ledger = json.loads(ledger_path.read_text(encoding='utf-8')) if ledger_path.exists() else {
+              'version': 1,
+              'updated_at': None,
+              'players': {}
+          }
+          players = ledger.setdefault('players', {})
+          processed = set(ledger.get('processed_events', []))
+          changed = False
+
+          username_re = __import__('re').compile(r'^[a-z0-9.-]{3,32}$')
+
+          for path in sorted(events_dir.glob('*.json')):
+              if path.name == 'README.json':
+                  continue
+              try:
+                  event = json.loads(path.read_text(encoding='utf-8'))
+              except Exception as exc:
+                  print(f'Invalid JSON: {path}: {exc}')
+                  sys.exit(1)
+
+              event_id = str(event.get('event_id', '')).strip()
+              username = str(event.get('username', '')).strip().lower()
+              event_type = str(event.get('type', '')).strip()
+              delta = event.get('sf_delta')
+              created_at = str(event.get('created_at', '')).strip()
+
+              if not event_id or event_id in processed:
+                  continue
+              if not username_re.fullmatch(username):
+                  print(f'Invalid username in {path}')
+                  sys.exit(1)
+              if event_type not in {'correct_answer', 'wrong_answer', 'reward'}:
+                  print(f'Invalid event type in {path}')
+                  sys.exit(1)
+              if not isinstance(delta, int) or isinstance(delta, bool) or abs(delta) > 100:
+                  print(f'Invalid sf_delta in {path}')
+                  sys.exit(1)
+              if not created_at:
+                  print(f'Missing created_at in {path}')
+                  sys.exit(1)
+
+              player = players.setdefault(username, {'sf': 0})
+              current = int(player.get('sf', 0))
+              player['sf'] = max(0, current + delta)
+              processed.add(event_id)
+              changed = True
+
+          if changed:
+              ledger['processed_events'] = sorted(processed)
+              ledger['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+              ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          else:
+              print('No new SF events to process.')
+
+      - name: Commit updated leaderboard
+        run: |
+          if git diff --quiet -- data/leaderboard.json; then
+            echo "No leaderboard changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/leaderboard.json
+          git commit -m "Update SF leaderboard"
+          git push
