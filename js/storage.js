@@ -26,6 +26,13 @@ export function loadState(username = getStoredUsername()) {
   } catch { return { ...defaults }; }
 }
 
+// Always read the current SF balance directly from the user's saved localStorage state.
+export function getStoredSF(username = getStoredUsername()) {
+  const current = loadState(username);
+  const value = Number(current?.sf);
+  return Number.isFinite(value) ? value : 0;
+}
+
 export function saveState(state, username = getStoredUsername()) {
   if (!username) throw new Error('Login required');
   localStorage.setItem(key(username), JSON.stringify({ ...state, energyVersion: ENERGY_MIGRATION_VERSION }));
