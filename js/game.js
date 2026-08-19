@@ -19,7 +19,7 @@ export class FlagGame {
   }
 
   isComplete() {
-    return this.completed || this.questionNumber >= this.totalQuestions;
+    return this.completed;
   }
 
   hasProgress() {
@@ -66,7 +66,7 @@ export class FlagGame {
   }
 
   answer(name) {
-    if (!this.current || this.answered || this.isComplete()) return null;
+    if (!this.current || this.answered || this.completed) return null;
     this.answered = true;
     const correct = name === this.current.country[0];
     this.score += correct ? 1 : -1;
