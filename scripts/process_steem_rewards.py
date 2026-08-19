@@ -10,13 +10,13 @@ LEADERBOARD = ROOT / "data/leaderboard.json"
 RPC = "https://api.steemit.com"
 REWARD_ID = "steemflags_reward_v1"
 BATCH_SIZE = 100
-MAX_BLOCKS_PER_RUN = 1000
-INITIAL_LOOKBACK = 5000
+MAX_BLOCKS_PER_RUN = 5000
+INITIAL_LOOKBACK = 1000
 
 
 def rpc(method, params=None):
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params or []}).encode()
-    req = Request(RPC, data=payload, headers={"Content-Type": "application/json", "User-Agent": "SteemFlags-GitHubAction/1.1"})
+    req = Request(RPC, data=payload, headers={"Content-Type": "application/json", "User-Agent": "SteemFlags-GitHubAction/1.2"})
     with urlopen(req, timeout=30) as response:
         body = json.loads(response.read().decode())
     if body.get("error"):
@@ -30,8 +30,8 @@ def batch_get_ops(start_block, end_block):
         for block in range(start_block, end_block + 1)
     ]
     payload = json.dumps(calls).encode()
-    req = Request(RPC, data=payload, headers={"Content-Type": "application/json", "User-Agent": "SteemFlags-GitHubAction/1.1"})
-    with urlopen(req, timeout=90) as response:
+    req = Request(RPC, data=payload, headers={"Content-Type": "application/json", "User-Agent": "SteemFlags-GitHubAction/1.2"})
+    with urlopen(RPC, data=payload, timeout=120) as response:
         body = json.loads(response.read().decode())
     results = {int(item["id"]): item.get("result", []) for item in body if "id" in item and not item.get("error")}
     if len(results) != end_block - start_block + 1:
