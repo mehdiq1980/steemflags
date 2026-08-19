@@ -1,0 +1,118 @@
+name: Process Steem Flags SF Issues
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: steemflags-sf-ledger
+  cancel-in-progress: false
+
+jobs:
+  process:
+    if: startsWith(github.event.issue.title, '[SF-EVENT]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse and validate SF event
+        id: event
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          python - <<'PY'
+          import json, os, re, sys
+          from pathlib import Path
+
+          body = os.environ.get('ISSUE_BODY') or ''
+          number = os.environ['ISSUE_NUMBER']
+          author = os.environ['ISSUE_AUTHOR'].lower()
+
+          m = re.search(r'event_id:\s*([^\n]+)\s*\nusername:\s*([^\n]+)\s*\ntype:\s*([^\n]+)\s*\nsf_delta:\s*(-?\d+)\s*\ncreated_at:\s*([^\n]+)', body, re.I)
+          if not m:
+              print('Invalid SF event format')
+              sys.exit(1)
+
+          event_id, username, event_type, delta_text, created_at = [x.strip() for x in m.groups()]
+          username = username.lower()
+          delta = int(delta_text)
+
+          if not re.fullmatch(r'[A-Za-z0-9._:-]{8,128}', event_id):
+              sys.exit('Invalid event_id')
+          if not re.fullmatch(r'[a-z0-9.-]{3,32}', username):
+              sys.exit('Invalid username')
+          if event_type != 'game_result':
+              sys.exit('Invalid event type')
+          if delta < -20 or delta > 20:
+              sys.exit('Invalid SF delta')
+          if not created_at:
+              sys.exit('Missing created_at')
+
+          # The GitHub issue author is recorded with the event for auditability.
+          event = {
+              'event_id': event_id,
+              'username': username,
+              'type': event_type,
+              'sf_delta': delta,
+              'created_at': created_at,
+              'github_actor': author,
+              'issue_number': int(number)
+          }
+          Path('/tmp/event.json').write_text(json.dumps(event, ensure_ascii=False, indent=2) + '\n')
+          PY
+
+      - name: Apply event to leaderboard
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          python - <<'PY'
+          import json, pathlib, os, datetime, sys
+
+          ledger_path = pathlib.Path('data/leaderboard.json')
+          event = json.loads(pathlib.Path('/tmp/event.json').read_text())
+          ledger = json.loads(ledger_path.read_text())
+          players = ledger.setdefault('players', {})
+          processed = set(ledger.setdefault('processed_events', []))
+
+          event_id = event['event_id']
+          if event_id in processed:
+              print('Event already processed.')
+              raise SystemExit(0)
+
+          username = event['username']
+          player = players.setdefault(username, {'sf': 0})
+          player['sf'] = max(0, int(player.get('sf', 0)) + int(event['sf_delta']))
+          processed.add(event_id)
+          ledger['processed_events'] = sorted(processed)
+          ledger['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+          ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n')
+          PY
+
+      - name: Commit leaderboard
+        run: |
+          if git diff --quiet -- data/leaderboard.json; then
+            echo "No leaderboard change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/leaderboard.json
+          git commit -m "Process SF event #${{ github.event.issue.number }}"
+          git push
+
+      - name: Close processed issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: gh issue close "$ISSUE_NUMBER" --comment "SF event processed by GitHub Actions."
