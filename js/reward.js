@@ -5,11 +5,13 @@ function ensureClaimStyles(){
   const style=document.createElement('style');
   style.id='sfClaimStyles';
   style.textContent=`
-    .sfClaimOverlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.82);backdrop-filter:blur(5px)}
-    .sfClaimCard{width:min(92vw,430px);padding:34px 24px;text-align:center;border-radius:24px;background:#0d1628;border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 70px rgba(0,0,0,.45)}
+    .sfClaimOverlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.82);backdrop-filter:blur(5px);overflow:auto}
+    .sfClaimCard{width:min(92vw,430px);max-height:calc(100vh - 40px);overflow-y:auto;padding:34px 24px;text-align:center;border-radius:24px;background:#0d1628;border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 70px rgba(0,0,0,.45);box-sizing:border-box}
     .sfClaimTitle{margin:0 0 16px;font-size:1.4rem;font-weight:800}.sfClaimAmount{margin:8px 0 26px;font-size:3.8rem;line-height:1;font-weight:900;letter-spacing:-.05em}.sfClaimUnit{font-size:1.25rem;font-weight:800;margin-left:7px}
     .sfClaimButton{width:100%;border:0;border-radius:14px;padding:16px 20px;background:#22c55e;color:#06120a;font-size:1.1rem;font-weight:900;cursor:pointer}.sfClaimButton:hover{background:#16a34a}.sfClaimButton:disabled{opacity:.65;cursor:wait}
     .sfClaimStatus{min-height:1.4em;margin:14px 0 0;font-size:.92rem;color:#aab6c9}
+    .sfClaimWarning{display:block;width:100%;height:390px;margin:18px 0 0;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#fff}
+    @media (max-width:480px){.sfClaimOverlay{padding:10px}.sfClaimCard{width:96vw;max-height:calc(100vh - 20px);padding:26px 16px}.sfClaimAmount{font-size:3.3rem}.sfClaimWarning{height:360px}}
   `;
   document.head.appendChild(style);
 }
@@ -38,6 +40,7 @@ export function showClaimDialog({username,sf,eventId}){
     <div class="sfClaimAmount">+${sf}<span class="sfClaimUnit">SF</span></div>
     <button id="sfClaimButton" class="sfClaimButton" type="button">Claim Rewards</button>
     <p class="sfClaimStatus">Your reward is ready to claim.</p>
+    <iframe class="sfClaimWarning" src="./savewarninig.html?v=20260819-01" title="SF reward saving warning"></iframe>
   </section>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#sfClaimButton').addEventListener('click',()=>{
