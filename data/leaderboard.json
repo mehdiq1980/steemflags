@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updated_at": "2026-08-19T23:18:26.040031Z",
+  "updated_at": "2026-08-20T00:31:03.911193Z",
   "players": {
     "do2earn": {
-      "sf": 100
+      "sf": 120
     }
   },
   "processed_events": [
@@ -12,6 +12,7 @@
     "do2earn-1787113477231-705ce309-0603-4ed4-b833-03fe411a1fe5",
     "do2earn-1787156150710-d0376b10-15aa-469f-b9cd-520be380e801",
     "do2earn-1787156964154-6e11f3a2-4bd7-4b10-a9f1-d77623d311be",
-    "do2earn-1787177845637-4eebfdae-ddaf-4a30-92da-0f128512205e"
+    "do2earn-1787177845637-4eebfdae-ddaf-4a30-92da-0f128512205e",
+    "do2earn-1787182231640-09fa802e-e3d6-4847-9f29-3d2e616d4e24"
   ]
 }
