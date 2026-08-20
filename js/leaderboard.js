@@ -18,7 +18,7 @@ function render(rows) {
     const sf=Number(row.sf||0);
     const avatar=row.avatar||avatarUrl(username);
     const medal=index===0?'🥇':index===1?'🥈':index===2?'🥉':String(index+1);
-    return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${avatar}" alt="@${username}"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} SF</td></tr>`;
+    return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${avatar}" alt="@${username}"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} D2E</td></tr>`;
   }).join('');
 
   const rewardPool = `<div class="rewardPool disabled"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
