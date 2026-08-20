@@ -4,7 +4,7 @@ import { FlagGame } from './game.js';
 import { loadProgress, recordAnswer, recordGame, saveProgress, accuracy } from './progression.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
-import { broadcastSFReward } from './reward.js?v=20260819-12';
+import { broadcastSFReward } from './reward.js?v=20260820-01';
 import { loadMenu } from './menu.js';
 const $ = (id) => document.getElementById(id);
 const GAME_STATE_PREFIX = 'steemFlags.incompleteGame.v2_';
