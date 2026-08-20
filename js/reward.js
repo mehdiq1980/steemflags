@@ -24,7 +24,7 @@ function saveReward(username, amount){
 
 export function showClaimDialog({username,sf,eventId}){
   const overlay=document.createElement('div');
-  overlay.innerHTML=`<div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#081020dd"><div style="background:#0d1628;padding:30px;border-radius:20px;text-align:center;color:white"><h2>Game Complete!</h2><div style="font-size:48px;font-weight:bold">+${sf} SF</div><button id="sfClaimButton" style="margin-top:20px;padding:15px 30px;background:#22c55e;border:0;border-radius:12px;font-weight:bold">Claim Rewards</button></div></div>`;
+  overlay.innerHTML=`<div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#081020dd;overflow:auto;padding:20px;box-sizing:border-box"><div style="width:min(520px,100%);background:#0d1628;padding:30px;border-radius:20px;text-align:center;color:white;box-sizing:border-box"><h2>Game Complete!</h2><div style="font-size:48px;font-weight:bold">+${sf} SF</div><button id="sfClaimButton" style="margin-top:20px;padding:15px 30px;background:#22c55e;border:0;border-radius:12px;font-weight:bold">Claim Rewards</button><div style="margin-top:24px;width:100%;overflow:hidden;border-radius:12px;background:#fff"><iframe src="./savewarninig.html" title="Save reward warning" style="display:block;width:100%;height:360px;border:0" loading="eager"></iframe></div></div></div>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#sfClaimButton').onclick=()=>{
     saveReward(username,sf);
