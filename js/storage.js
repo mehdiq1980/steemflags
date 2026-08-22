@@ -1,9 +1,9 @@
 const PREFIX = 'steemflags.state.v2';
 const USER_KEY = 'steemflags.username';
-const DAILY_ENERGY = 30;
-// Temporary test configuration: reset each existing account once to the new 30-energy daily allowance.
-const ENERGY_MIGRATION_VERSION = 32;
-const defaults = { sf: 0, energy: DAILY_ENERGY, lastEnergyDay: null, energyVersion: ENERGY_MIGRATION_VERSION };
+const DAILY_ENERGY = 3;
+// Daily energy allowance is 3. Purchased energy is tracked separately and resets each local day.
+const ENERGY_MIGRATION_VERSION = 33;
+const defaults = { sf: 0, energy: DAILY_ENERGY, lastEnergyDay: null, energyVersion: ENERGY_MIGRATION_VERSION, purchasedEnergyToday: 0, purchaseDay: null };
 
 function key(username) {
   return `${PREFIX}_${encodeURIComponent(String(username).trim().toLowerCase())}`;
@@ -18,7 +18,15 @@ export function loadState(username = getStoredUsername()) {
   try {
     const stored = JSON.parse(localStorage.getItem(key(username)) || '{}');
     if (stored.energyVersion !== ENERGY_MIGRATION_VERSION) {
-      const migrated = { ...defaults, ...stored, energy: DAILY_ENERGY, lastEnergyDay: localDay(), energyVersion: ENERGY_MIGRATION_VERSION };
+      const migrated = {
+        ...defaults,
+        ...stored,
+        energy: DAILY_ENERGY,
+        lastEnergyDay: localDay(),
+        energyVersion: ENERGY_MIGRATION_VERSION,
+        purchasedEnergyToday: 0,
+        purchaseDay: localDay()
+      };
       localStorage.setItem(key(username), JSON.stringify(migrated));
       return migrated;
     }
@@ -26,7 +34,7 @@ export function loadState(username = getStoredUsername()) {
   } catch { return { ...defaults }; }
 }
 
-// Always read the current SF balance directly from the user's saved localStorage state.
+// Always read the current SF/D2E balance directly from the user's saved localStorage state.
 export function getStoredSF(username = getStoredUsername()) {
   const current = loadState(username);
   const value = Number(current?.sf);
@@ -54,10 +62,18 @@ export function refreshDailyEnergy(state, username = getStoredUsername()) {
     state.energy = DAILY_ENERGY;
     state.lastEnergyDay = day;
     state.energyVersion = ENERGY_MIGRATION_VERSION;
+    state.purchasedEnergyToday = 0;
+    state.purchaseDay = day;
     if (username) saveState(state, username);
   } else if (state.energyVersion !== ENERGY_MIGRATION_VERSION) {
     state.energy = DAILY_ENERGY;
     state.energyVersion = ENERGY_MIGRATION_VERSION;
+    state.purchasedEnergyToday = 0;
+    state.purchaseDay = day;
+    if (username) saveState(state, username);
+  } else if (state.purchaseDay !== day) {
+    state.purchasedEnergyToday = 0;
+    state.purchaseDay = day;
     if (username) saveState(state, username);
   }
   return state;
