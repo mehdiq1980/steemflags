@@ -38,11 +38,15 @@ jobs:
           if daily.get('date')!=today: daily={'date':today,'quantity':0}; purchases[username]=daily
           if int(daily.get('quantity',0))+1>10: raise SystemExit('Daily purchase limit exceeded')
           if balance<10: raise SystemExit('Insufficient D2E balance')
-          player['sf']=balance-10; daily['quantity']=int(daily.get('quantity',0))+1; processed.append(event_id); data['updated_at']=datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
+          player['sf']=balance-10
+          player['shop_energy_pending']=int(player.get('shop_energy_pending',0))+1
+          daily['quantity']=int(daily.get('quantity',0))+1
+          processed.append(event_id)
+          data['updated_at']=datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
           path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
           PY
 
-      - name: Commit balance change
+      - name: Commit balance and energy purchase
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
