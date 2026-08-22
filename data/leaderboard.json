@@ -1,9 +1,10 @@
 {
   "version": 1,
-  "updated_at": "2026-08-22T12:44:03.923322Z",
+  "updated_at": "2026-08-22T12:49:55.902478Z",
   "players": {
     "do2earn": {
-      "sf": 140
+      "sf": 130,
+      "shop_energy_pending": 1
     }
   },
   "processed_events": [
@@ -17,12 +18,13 @@
     "do2earn-1787220724943-3093d222-593e-4b0c-b1dd-c0800a677379",
     "do2earn-1787220983791-29d7157f-c8eb-4d10-b6ef-fe9a1a70b2b5",
     "do2earn-1787398795935-f59b3bd6-18d3-4077-a02b-8fa605bb1ecf",
-    "do2earn-1787398993243-fbacadcf-90f2-4014-9315-2962d32b256d"
+    "do2earn-1787398993243-fbacadcf-90f2-4014-9315-2962d32b256d",
+    "do2earn-1787399368820-231f5751-f1ae-424a-a956-157b7f4577fc"
   ],
   "energy_purchases": {
     "do2earn": {
       "date": "2026-08-22",
-      "quantity": 2
+      "quantity": 3
     }
   }
 }
