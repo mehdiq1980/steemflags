@@ -1,0 +1,104 @@
+name: Process Energy Purchase
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  process:
+    if: contains(github.event.issue.labels.*.name, 'shop') && contains(github.event.issue.labels.*.name, 'energy')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Process purchase
+        id: purchase
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, datetime
+          from pathlib import Path
+
+          body = os.environ['ISSUE_BODY']
+          issue = int(os.environ['ISSUE_NUMBER'])
+
+          def field(label):
+              m = re.search(r'###\s*' + re.escape(label) + r'\s*\n\s*([^\n]+)', body, re.I)
+              return m.group(1).strip() if m else ''
+
+          username = field('Steem username').lower().lstrip('@')
+          quantity_raw = field('Energy quantity')
+          confirmation = 'I confirm that 10 D2E will be deducted' in body
+          if not username or not re.fullmatch(r'[a-z0-9.-]{3,32}', username):
+              raise SystemExit('Invalid Steem username')
+          try:
+              quantity = int(quantity_raw)
+          except Exception:
+              raise SystemExit('Invalid energy quantity')
+          if quantity < 1 or quantity > 10 or not confirmation:
+              raise SystemExit('Invalid purchase request')
+
+          path = Path('data/leaderboard.json')
+          data = json.loads(path.read_text())
+          player = data.setdefault('players', {}).setdefault(username, {'sf': 0})
+          balance = int(player.get('sf', 0))
+          today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+          processed = data.setdefault('processed_events', [])
+          event_id = f'energy-issue-{issue}'
+          if event_id in processed:
+              raise SystemExit('Purchase already processed')
+
+          purchases = data.setdefault('energy_purchases', {})
+          daily = purchases.setdefault(username, {})
+          if daily.get('date') != today:
+              daily['date'] = today
+              daily['quantity'] = 0
+          current = int(daily.get('quantity', 0))
+          if current + quantity > 10:
+              raise SystemExit('Daily energy purchase limit exceeded')
+
+          cost = quantity * 10
+          if balance < cost:
+              raise SystemExit('Insufficient D2E balance')
+
+          player['sf'] = balance - cost
+          daily['quantity'] = current + quantity
+          processed.append(event_id)
+          data['updated_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
+
+          Path('/tmp/result').write_text(json.dumps({
+              'username': username,
+              'quantity': quantity,
+              'cost': cost,
+              'balance': player['sf'],
+              'daily': daily['quantity']
+          }))
+          PY
+
+      - name: Commit balance change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/leaderboard.json
+          git commit -m "Process Shop energy purchase #${{ github.event.issue.number }}" || exit 0
+          git push
+
+      - name: Close processed issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'completed'
+            });
