@@ -115,6 +115,33 @@ async function handle(request, env) {
     return json({ success: true, player: await getPlayer(env.DB, username) });
   }
 
+  // Atomically buy one energy for 10 D2E. The server-side balance is authoritative.
+  // leaderboard.json is the public snapshot of this balance; the Shop reads that file
+  // for display and uses this endpoint to perform the actual deduction safely.
+  if (request.method === "POST" && path === "/api/shop/buy-energy") {
+    let body;
+    try { body = await request.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
+
+    const username = normalizeUsername(body?.username);
+    if (!username) return json({ success: false, error: "Invalid username" }, 400);
+
+    await ensurePlayer(env.DB, username);
+    const result = await env.DB.prepare(`
+      UPDATE players
+      SET total_points = total_points - 10,
+          sf_balance = CASE WHEN sf_balance >= 10 THEN sf_balance - 10 ELSE 0 END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE username = ? AND total_points >= 10
+    `).bind(username).run();
+
+    if (!result.meta?.changes) {
+      return json({ success: false, error: "Insufficient D2E balance" }, 400);
+    }
+
+    const player = await getPlayer(env.DB, username);
+    return json({ success: true, player });
+  }
+
   if (request.method === "POST" && path === "/api/game/start") {
     let body;
     try { body = await request.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
