@@ -1,9 +1,6 @@
-// GitHub-only leaderboard storage.
-// No Cloudflare Worker or external leaderboard API is used.
-window.STEEM_FLAGS_API_URL = '';
+// Cloudflare Worker API used for server-side Shop purchases and D2E balance reads.
+window.STEEM_FLAGS_API_URL = 'https://steemflags.mehdiq.workers.dev';
 
-// Kept as a no-op for compatibility with the existing frontend.
-// Global leaderboard updates are handled through the GitHub data/workflow layer.
 window.submitGlobalSF = async function submitGlobalSF() {
   return false;
 };
