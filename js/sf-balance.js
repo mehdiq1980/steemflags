@@ -1,19 +1,21 @@
-// Read the logged-in user's SF balance from the public leaderboard data.
+const API_BASE = 'https://steemflags.mehdiq.workers.dev';
+
+// Read the logged-in user's D2E balance from Cloudflare D1.
 export async function loadLeaderboardSF(username) {
   const name = String(username || '').trim().toLowerCase();
   if (!name) return 0;
 
   try {
-    const response = await fetch(`./data/leaderboard.json?v=${Date.now()}`, {
+    const response = await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(name)}`, {
       cache: 'no-store'
     });
-    if (!response.ok) throw new Error(`Leaderboard request failed: ${response.status}`);
+    if (!response.ok) throw new Error(`Account request failed: ${response.status}`);
 
     const data = await response.json();
-    const value = data?.players?.[name]?.sf;
+    const value = data?.account?.D2E;
     return Number.isFinite(Number(value)) ? Number(value) : 0;
   } catch (error) {
-    console.warn('Unable to load SF balance from leaderboard.json', error);
+    console.warn('Unable to load D2E balance from Cloudflare D1', error);
     return 0;
   }
 }
