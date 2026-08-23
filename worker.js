@@ -63,7 +63,7 @@ export default {
     }
 
     // GET /api/account?username=...
-    // Returns one account from D1.
+    // Returns one account from D1 and creates the account on first login.
     if (url.pathname === '/api/account' && request.method === 'GET') {
       const username = String(url.searchParams.get('username') || '').trim().toLowerCase();
       if (!validUsername(username)) {
@@ -71,6 +71,12 @@ export default {
       }
 
       try {
+        await env.DB.prepare(`
+          INSERT INTO accounts (Username, D2E, SteemReward, Energy, Flag)
+          VALUES (?, 0, 0, 0, '')
+          ON CONFLICT(Username) DO NOTHING
+        `).bind(username).run();
+
         const account = await env.DB.prepare(`
           SELECT Username, D2E, SteemReward, Energy, Flag
           FROM accounts
@@ -81,7 +87,7 @@ export default {
         return json({ success: true, account: account || null }, 200, responseOrigin);
       } catch (error) {
         console.error(error);
-        return json({ error: 'Unable to read account' }, 503, responseOrigin);
+        return json({ error: 'Unable to read/create account' }, 503, responseOrigin);
       }
     }
 
