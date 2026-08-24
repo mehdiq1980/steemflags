@@ -2,8 +2,8 @@ const app = document.getElementById('app');
 
 async function startSteemFlags() {
   try {
-    // Cache-bust the application module so leaderboard fixes are always loaded after deployment.
-    await import('./app-v2.js?v=20260825-leaderboard-d1-02');
+    // Cache-bust the application module so the latest gameplay feedback is loaded after deployment.
+    await import('./app-v2.js?v=20260825-game-feedback-03');
   } catch (error) {
     console.error('Steem Flags module load failed:', error);
     if (app) {
