@@ -3,12 +3,13 @@ import { FlagGame } from './game.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
 import { saveGameResult } from './reward.js?v=20260825-d1-game-01';
+import { loadMenu } from './menu.js?v=20260825-menu-01';
 
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
 const $ = id => document.getElementById(id);
 
 async function loadComponent() {
-  const response = await fetch('./components/app-shell.html?v=20260825-d1-game-07', { cache: 'no-store' });
+  const response = await fetch('./components/app-shell.html?v=20260825-d1-game-08', { cache: 'no-store' });
   if (!response.ok) throw new Error(`Unable to load component: ${response.status}`);
   return response.text();
 }
@@ -51,6 +52,7 @@ async function bootstrap() {
   const app = $('app');
   if (!app) throw new Error('APP_CONTAINER_MISSING');
   app.innerHTML = await loadComponent();
+  await loadMenu();
   start();
 }
 
@@ -334,6 +336,12 @@ function start() {
     sessionCorrect = 0;
     showHome();
   }));
+
+  window.addEventListener('steemflags:logout', () => {
+    const button = getLogoutButton();
+    if (button) button.click();
+  });
+  window.addEventListener('steemflags:new-game', () => { if (username) newGame(); });
 
   applyLanguage(document, getLanguage());
   bindLogout();
