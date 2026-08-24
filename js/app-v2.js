@@ -9,26 +9,22 @@ import { saveGameResult } from './reward.js?v=20260824-d1-game-02';
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
 const GAME_STATE_PREFIX = 'steemFlags.incompleteGame.v2_';
 const $ = id => document.getElementById(id);
-
 const gameStateKey = username => `${GAME_STATE_PREFIX}${encodeURIComponent(String(username).trim().toLowerCase())}`;
+
 function loadIncompleteGame(username) {
   if (!username) return null;
-  try { return JSON.parse(localStorage.getItem(gameStateKey(username)) || 'null'); }
-  catch { return null; }
+  try { return JSON.parse(localStorage.getItem(gameStateKey(username)) || 'null'); } catch { return null; }
 }
 function saveIncompleteGame(username, game) {
   if (username && game.hasProgress()) localStorage.setItem(gameStateKey(username), JSON.stringify(game.serialize()));
 }
-function clearIncompleteGame(username) {
-  if (username) localStorage.removeItem(gameStateKey(username));
-}
+function clearIncompleteGame(username) { if (username) localStorage.removeItem(gameStateKey(username)); }
 
 async function loadComponent() {
-  const response = await fetch('./components/app-shell.html?v=20260824-d1-game-04', { cache: 'no-store' });
+  const response = await fetch('./components/app-shell.html?v=20260824-d1-game-05', { cache: 'no-store' });
   if (!response.ok) throw new Error(`Unable to load component: ${response.status}`);
   return response.text();
 }
-
 async function fetchAccount(username) {
   const response = await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(username)}`, { cache: 'no-store' });
   if (!response.ok) throw new Error(`ACCOUNT_API_${response.status}`);
@@ -36,19 +32,12 @@ async function fetchAccount(username) {
   if (!data?.success || !data.account) throw new Error('ACCOUNT_API_INVALID');
   return data.account;
 }
-
 async function startGameOnServer(username) {
-  const response = await fetch(`${API_BASE}/api/game/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username }),
-    cache: 'no-store'
-  });
+  const response = await fetch(`${API_BASE}/api/game/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }), cache: 'no-store' });
   const data = await response.json();
   if (!response.ok || !data?.success) throw new Error(data?.error || `GAME_START_${response.status}`);
   return data.account;
 }
-
 async function fetchSteemBalance(account) {
   const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'condenser_api.get_accounts', params: [[account]] });
   for (const endpoint of ['https://api.steemit.com', 'https://api.steem.house', 'https://api.steemyy.com', 'https://api.steemworld.org']) {
@@ -97,7 +86,6 @@ function start() {
   const usernameInput = $('usernameInput');
   const loginFeedback = $('loginFeedback');
   const loggedIn = $('loggedInUser');
-  const logout = document.querySelector('[data-action="logout"]');
   const language = $('languageSelect');
   const progressBar = $('quizProgressBar');
   const info = $('countryInfoLink');
@@ -116,13 +104,36 @@ function start() {
 
   const game = new FlagGame(renderQuestion);
 
+  function getLogoutButton() { return document.querySelector('[data-action="logout"]'); }
+  function setLogoutVisible(visible) {
+    const button = getLogoutButton();
+    if (button) button.hidden = !visible;
+  }
+  function bindLogout() {
+    const button = getLogoutButton();
+    if (!button || button.dataset.bound === '1') return;
+    button.dataset.bound = '1';
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      clearStoredUsername();
+      username = null;
+      postingKey = null;
+      game.reset();
+      loginView.hidden = false;
+      home.hidden = true;
+      leaderboard.hidden = true;
+      gameView.hidden = true;
+      setLogoutVisible(false);
+      hideInfo();
+    });
+  }
+
   function hideInfo() {
     if (!info) return;
     info.hidden = true;
     info.removeAttribute('href');
     info.style.display = 'none';
   }
-
   function showInfo(name) {
     if (!info) return;
     const lang = getLanguage();
@@ -147,8 +158,7 @@ function start() {
   }
 
   async function updateStats() {
-    if (username) await syncAccountFromD1();
-    else state = loadState();
+    if (username) await syncAccountFromD1(); else state = loadState();
     energy.textContent = String(state.energy);
     newButton.disabled = !username || state.energy <= 0;
     if (assets) assets.hidden = !username;
@@ -162,6 +172,7 @@ function start() {
       const balance = await fetchSteemBalance(username);
       if (balance !== null && steem) steem.textContent = balance;
     }
+    bindLogout();
   }
 
   function setProgress(number) {
@@ -171,7 +182,6 @@ function start() {
       progressBar.setAttribute('aria-valuenow', String(value));
     }
   }
-
   function renderQuestion(question, points, number) {
     counter.textContent = `${t('question')} ${number} ${t('of')} ${game.totalQuestions}`;
     score.textContent = `${t('score')}: ${points}`;
@@ -191,7 +201,6 @@ function start() {
       answers.appendChild(button);
     });
   }
-
   function chooseAnswer(button, name) {
     if (game.answered || game.completed || !username) return;
     const result = game.answer(name);
@@ -219,16 +228,16 @@ function start() {
     showInfo(result.answer);
     next.hidden = false;
   }
-
   function showHome() {
     loginView.hidden = true;
     home.hidden = false;
     leaderboard.hidden = false;
     gameView.hidden = true;
     hideInfo();
+    bindLogout();
+    setLogoutVisible(true);
     updateStats().catch(error => console.error('Stats refresh failed', error));
   }
-
   function showGame() {
     loginView.hidden = true;
     home.hidden = true;
@@ -236,7 +245,6 @@ function start() {
     gameView.hidden = false;
     hideInfo();
   }
-
   async function newGame() {
     if (!username) return;
     newButton.disabled = true;
@@ -262,7 +270,6 @@ function start() {
       await updateStats();
     }
   }
-
   function resumeGame() {
     const saved = loadIncompleteGame(username);
     if (!saved || !game.restore(saved)) {
@@ -289,27 +296,12 @@ function start() {
       await syncAccountFromD1();
       key.value = '';
       progress = loadProgress(username);
-      logout.hidden = false;
       showHome();
     } catch (error) {
       postingKey = null;
       console.error('Login failed', error);
       loginFeedback.textContent = error?.message || t('invalidPostingKey');
     }
-  });
-
-  logout.addEventListener('click', event => {
-    event.preventDefault();
-    clearStoredUsername();
-    username = null;
-    postingKey = null;
-    game.reset();
-    loginView.hidden = false;
-    home.hidden = true;
-    leaderboard.hidden = true;
-    gameView.hidden = true;
-    logout.hidden = true;
-    hideInfo();
   });
 
   if (language) {
@@ -319,10 +311,8 @@ function start() {
       if (!gameView.hidden && game.current) renderQuestion(game.current, game.score, game.questionNumber);
     });
   }
-
   newButton.onclick = newGame;
   if (resumeButton) resumeButton.onclick = resumeGame;
-
   next.onclick = async () => {
     if (!game.isComplete()) {
       game.next();
@@ -345,21 +335,13 @@ function start() {
     energy.textContent = String(state.energy);
     showHome();
   };
-
   document.querySelectorAll('[data-action="home"]').forEach(button => button.addEventListener('click', showHome));
-  document.querySelectorAll('[data-action="reset"]').forEach(button => button.addEventListener('click', () => {
-    clearIncompleteGame(username);
-    game.reset();
-    showHome();
-  }));
-
+  document.querySelectorAll('[data-action="reset"]').forEach(button => button.addEventListener('click', () => { clearIncompleteGame(username); game.reset(); showHome(); }));
   applyLanguage(document, getLanguage());
+  bindLogout();
 
   if (username) {
-    syncAccountFromD1().then(() => {
-      logout.hidden = false;
-      showHome();
-    }).catch(error => {
+    syncAccountFromD1().then(() => { showHome(); }).catch(error => {
       console.error('Stored-session sync failed', error);
       clearStoredUsername();
       username = null;
@@ -367,21 +349,19 @@ function start() {
       home.hidden = true;
       leaderboard.hidden = true;
       gameView.hidden = true;
-      logout.hidden = true;
+      setLogoutVisible(false);
     });
   } else {
     loginView.hidden = false;
     home.hidden = true;
     leaderboard.hidden = true;
     gameView.hidden = true;
-    logout.hidden = true;
+    setLogoutVisible(false);
   }
 }
 
 bootstrap().catch(error => {
   console.error('Steem Flags startup failed', error);
   const loading = $('loading');
-  if (loading) {
-    loading.innerHTML = `<h2>Unable to load the game</h2><p>Startup error: ${String(error?.message || error)}</p><p>Please refresh the page.</p>`;
-  }
+  if (loading) loading.innerHTML = `<h2>Unable to load the game</h2><p>Startup error: ${String(error?.message || error)}</p><p>Please refresh the page.</p>`;
 });
