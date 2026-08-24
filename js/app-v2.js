@@ -6,11 +6,13 @@ import { saveGameResult } from './reward.js?v=20260825-d1-game-01';
 import { loadMenu } from './menu.js?v=20260825-menu-01';
 
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
-const SESSION_KEY = 'steemFlagsSession';
+// This stores only the non-sensitive login identity so a browser refresh can restore the UI.
+// No posting key, score, energy, D2E, or game state is stored locally.
+const SESSION_KEY = 'steemFlagsAuthSession';
 const $ = id => document.getElementById(id);
 
 async function loadComponent() {
-  const response = await fetch('./components/app-shell.html?v=20260825-d1-game-08', { cache: 'no-store' });
+  const response = await fetch('./components/app-shell.html?v=20260825-d1-game-09', { cache: 'no-store' });
   if (!response.ok) throw new Error(`Unable to load component: ${response.status}`);
   return response.text();
 }
@@ -49,7 +51,7 @@ async function fetchSteemBalance(account) {
 
 function readSession() {
   try {
-    const value = sessionStorage.getItem(SESSION_KEY);
+    const value = localStorage.getItem(SESSION_KEY);
     if (!value) return null;
     const parsed = JSON.parse(value);
     return /^[a-z0-9.-]{3,32}$/.test(parsed?.username || '') ? parsed.username : null;
@@ -57,11 +59,11 @@ function readSession() {
 }
 
 function writeSession(username) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ username }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ username }));
 }
 
 function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }
 
 async function bootstrap() {
@@ -139,7 +141,7 @@ function start() {
     score.textContent = `${t('score')}: ${gameScore}`; updateSessionSummary(); showInfo(result.answer); next.hidden = false;
   }
 
-  function showHome() { loginView.hidden = true; home.hidden = false; leaderboard.hidden = false; gameView.hidden = true; hideInfo(); bindLogout(); setLogoutVisible(true); syncAccountFromD1().catch(error => console.error('Stats refresh failed', error)); }
+  function showHome() { loginView.hidden = true; home.hidden = false; leaderboard.hidden = false; gameView.hidden = true; hideInfo(); bindLogout(); setLogoutVisible(true); }
   function showGame() { loginView.hidden = true; home.hidden = true; leaderboard.hidden = true; gameView.hidden = false; hideInfo(); }
 
   async function newGame() {
@@ -152,15 +154,24 @@ function start() {
     const savedUsername = readSession();
     if (!savedUsername) return false;
     username = savedUsername;
-    try { await syncAccountFromD1(); showHome(); return true; }
-    catch (error) { console.warn('Session restore failed', error); clearSession(); username = null; account = null; return false; }
+    try {
+      await syncAccountFromD1();
+      loginFeedback.textContent = '';
+      showHome();
+      return true;
+    } catch (error) {
+      console.warn('Persistent session restore failed', error);
+      clearSession(); username = null; account = null;
+      loginView.hidden = false; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true; setLogoutVisible(false);
+      return false;
+    }
   }
 
   loginForm.addEventListener('submit', async event => {
     event.preventDefault(); const enteredUsername = usernameInput.value.trim().toLowerCase(); const enteredPostingKey = key.value.trim();
     if (!/^[a-z0-9.-]{3,32}$/.test(enteredUsername) || !enteredPostingKey) { loginFeedback.textContent = t('invalidPostingKey'); return; }
     loginFeedback.textContent = t('verifying');
-    try { await verifyPostingKey(enteredUsername, enteredPostingKey); username = enteredUsername; postingKey = enteredPostingKey; key.value = ''; writeSession(username); await syncAccountFromD1(); loginFeedback.textContent = ''; showHome(); }
+    try { await verifyPostingKey(enteredUsername, enteredPostingKey); username = enteredUsername; postingKey = enteredPostingKey; key.value = ''; await syncAccountFromD1(); writeSession(username); loginFeedback.textContent = ''; showHome(); }
     catch (error) { clearSession(); username = null; postingKey = null; console.error('Login failed', error); loginFeedback.textContent = error?.message || t('invalidPostingKey'); }
   });
 
