@@ -6,19 +6,25 @@ import { saveGameResult } from './reward.js?v=20260825-d1-game-01';
 import { loadMenu } from './menu.js?v=20260825-menu-01';
 
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
-// This stores only the non-sensitive login identity so a browser refresh can restore the UI.
-// No posting key, score, energy, D2E, or game state is stored locally.
+// Only the non-sensitive username is persisted so a refresh can restore the UI.
+// Posting key, D2E, Energy, score, and game state are never persisted locally.
 const SESSION_KEY = 'steemFlagsAuthSession';
 const $ = id => document.getElementById(id);
 
 async function loadComponent() {
-  const response = await fetch('./components/app-shell.html?v=20260825-d1-game-09', { cache: 'no-store' });
+  const response = await fetch('./components/app-shell.html?v=20260825-d1-game-10', { cache: 'no-store' });
   if (!response.ok) throw new Error(`Unable to load component: ${response.status}`);
   return response.text();
 }
 
 async function fetchAccount(username) {
-  const response = await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(username)}`, { cache: 'no-store' });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(username)}`, { cache: 'no-store' });
+  } catch (error) {
+    throw new Error('ACCOUNT_NETWORK_ERROR');
+  }
+  if (response.status === 404) throw new Error('ACCOUNT_NOT_FOUND');
   if (!response.ok) throw new Error(`ACCOUNT_API_${response.status}`);
   const data = await response.json();
   if (!data?.success || !data.account) throw new Error('ACCOUNT_API_INVALID');
@@ -154,17 +160,36 @@ function start() {
     const savedUsername = readSession();
     if (!savedUsername) return false;
     username = savedUsername;
-    try {
-      await syncAccountFromD1();
-      loginFeedback.textContent = '';
-      showHome();
-      return true;
-    } catch (error) {
-      console.warn('Persistent session restore failed', error);
+    loginView.hidden = true; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true;
+    loginFeedback.textContent = 'Restoring your session…';
+
+    let lastError = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await syncAccountFromD1();
+        loginFeedback.textContent = '';
+        showHome();
+        return true;
+      } catch (error) {
+        lastError = error;
+        console.warn(`Persistent session restore attempt ${attempt} failed`, error);
+        if (error?.message === 'ACCOUNT_NOT_FOUND') break;
+        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 800 * attempt));
+      }
+    }
+
+    // A transient/network/API error must NOT log the user out.
+    // Only an explicit D1 404 means the account no longer exists.
+    if (lastError?.message === 'ACCOUNT_NOT_FOUND') {
       clearSession(); username = null; account = null;
+      loginFeedback.textContent = '';
       loginView.hidden = false; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true; setLogoutVisible(false);
       return false;
     }
+
+    loginFeedback.textContent = 'Unable to restore your account. Please check your connection and refresh again.';
+    loginView.hidden = false; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true; setLogoutVisible(false);
+    return false;
   }
 
   loginForm.addEventListener('submit', async event => {
