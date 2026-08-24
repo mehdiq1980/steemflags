@@ -18,16 +18,22 @@
       console.error('Steem Flags startup error:', event.error || event.message);
       const app = document.getElementById('app');
       if (app && app.querySelector('h1')?.textContent.includes('Loading')) {
-        app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Please refresh the page. The game did not finish loading.</p></section></main>';
+        const detail = String(event.error?.message || event.message || 'JavaScript module failed to load').replace(/[<>&]/g, '');
+        app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
       }
     });
     window.addEventListener('unhandledrejection', function (event) {
       console.error('Steem Flags startup rejection:', event.reason);
+      const app = document.getElementById('app');
+      if (app && app.querySelector('h1')?.textContent.includes('Loading')) {
+        const detail = String(event.reason?.message || event.reason || 'Module startup failed').replace(/[<>&]/g, '');
+        app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
+      }
     });
   </script>
   <script src="https://unpkg.com/dsteem@0.11.3/dist/dsteem.js"></script>
   <script src="js/config.js?v=20260820-01"></script>
   <script src="js/standard-flags.js?v=20260820-01"></script>
-  <script type="module" src="js/app-v2.js?v=20260824-d1-game-03"></script>
+  <script type="module" src="js/app-v2.js?v=20260825-startup-01"></script>
 </body>
 </html>
