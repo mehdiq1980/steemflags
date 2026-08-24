@@ -20,7 +20,7 @@ async function getAccount(db, username) {
 }
 
 async function ensureAccount(db, username) {
-  await db.prepare(`INSERT INTO accounts (Username, D2E, Energy, Flag) VALUES (?, 0, 0, NULL) ON CONFLICT(Username) DO NOTHING`).bind(username).run();
+  await db.prepare(`INSERT INTO accounts (Username, D2E, Energy, Flag) VALUES (?, 0, 3, NULL) ON CONFLICT(Username) DO NOTHING`).bind(username).run();
   return getAccount(db, username);
 }
 
