@@ -16,12 +16,16 @@ function normalizeUsername(value) {
 }
 
 async function getAccount(db, username) {
-  return await db.prepare(`SELECT Username, D2E, Energy, Flag FROM accounts WHERE Username = ?`).bind(username).first();
+  return await db.prepare(`SELECT Username, D2E, SteemReward, Energy, Flag FROM accounts WHERE Username = ?`).bind(username).first();
 }
 
 async function ensureAccount(db, username) {
-  await db.prepare(`INSERT INTO accounts (Username, D2E, Energy, Flag) VALUES (?, 0, 3, NULL) ON CONFLICT(Username) DO NOTHING`).bind(username).run();
+  await db.prepare(`INSERT INTO accounts (Username, D2E, SteemReward, Energy, Flag) VALUES (?, 0, 0, 3, NULL) ON CONFLICT(Username) DO NOTHING`).bind(username).run();
   return getAccount(db, username);
+}
+
+async function ensureGameEventsTable(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS game_events (event_id TEXT PRIMARY KEY, Username TEXT NOT NULL, score INTEGER NOT NULL, created_at TEXT NOT NULL)`).run();
 }
 
 async function handle(request, env) {
@@ -41,6 +45,40 @@ async function handle(request, env) {
     if (!username) return json({ success: false, error: "Invalid username" }, 400);
     const account = await ensureAccount(env.DB, username);
     return json({ success: true, account });
+  }
+
+  if (request.method === "POST" && path === "/api/game/start") {
+    let body;
+    try { body = await request.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
+    const username = normalizeUsername(body?.username ?? body?.Username);
+    if (!username) return json({ success: false, error: "Invalid username" }, 400);
+    await ensureAccount(env.DB, username);
+    const result = await env.DB.prepare(`UPDATE accounts SET Energy = Energy - 1 WHERE Username = ? AND Energy > 0`).bind(username).run();
+    if (!result.meta?.changes) return json({ success: false, error: "Not enough energy" }, 409);
+    return json({ success: true, account: await getAccount(env.DB, username) });
+  }
+
+  if (request.method === "POST" && path === "/api/game/result") {
+    let body;
+    try { body = await request.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
+    const username = normalizeUsername(body?.username ?? body?.Username);
+    const eventId = typeof body?.eventId === "string" ? body.eventId.trim() : "";
+    const score = Number(body?.score);
+    if (!username || !eventId || !Number.isInteger(score) || score < -20 || score > 20) {
+      return json({ success: false, error: "Invalid game result" }, 400);
+    }
+    await ensureAccount(env.DB, username);
+    await ensureGameEventsTable(env.DB);
+    const existing = await env.DB.prepare(`SELECT event_id FROM game_events WHERE event_id = ?`).bind(eventId).first();
+    if (existing) return json({ success: true, duplicate: true, account: await getAccount(env.DB, username) });
+
+    const account = await getAccount(env.DB, username);
+    const nextD2E = Math.max(0, Number(account?.D2E || 0) + score);
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE accounts SET D2E = ? WHERE Username = ?`).bind(nextD2E, username),
+      env.DB.prepare(`INSERT INTO game_events (event_id, Username, score, created_at) VALUES (?, ?, ?, ?)`).bind(eventId, username, score, new Date().toISOString())
+    ]);
+    return json({ success: true, duplicate: false, account: await getAccount(env.DB, username) });
   }
 
   if (request.method === "POST" && path === "/api/account") {
@@ -81,7 +119,7 @@ async function handle(request, env) {
 
   if (request.method === "GET" && path === "/api/accounts") {
     const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 100, 1), 500);
-    const result = await env.DB.prepare(`SELECT Username, D2E, Energy, Flag FROM accounts ORDER BY Username ASC LIMIT ?`).bind(limit).all();
+    const result = await env.DB.prepare(`SELECT Username, D2E, SteemReward, Energy, Flag FROM accounts ORDER BY D2E DESC, Username ASC LIMIT ?`).bind(limit).all();
     return json({ success: true, accounts: result.results });
   }
 
