@@ -39,8 +39,8 @@ async function handle(request, env) {
   if (request.method === "GET" && path === "/api/account") {
     const username = normalizeUsername(url.searchParams.get("username"));
     if (!username) return json({ success: false, error: "Invalid username" }, 400);
-    const account = await getAccount(env.DB, username);
-    return json({ success: true, account: account || null });
+    const account = await ensureAccount(env.DB, username);
+    return json({ success: true, account });
   }
 
   if (request.method === "POST" && path === "/api/account") {
