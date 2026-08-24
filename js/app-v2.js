@@ -6,6 +6,7 @@ import { saveGameResult } from './reward.js?v=20260825-d1-game-01';
 import { loadMenu } from './menu.js?v=20260825-menu-01';
 
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
+const SESSION_KEY = 'steemFlagsSession';
 const $ = id => document.getElementById(id);
 
 async function loadComponent() {
@@ -24,10 +25,8 @@ async function fetchAccount(username) {
 
 async function startGameOnServer(username) {
   const response = await fetch(`${API_BASE}/api/game/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username }),
-    cache: 'no-store'
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }), cache: 'no-store'
   });
   const data = await response.json();
   if (!response.ok || !data?.success) throw new Error(data?.error || `GAME_START_${response.status}`);
@@ -48,6 +47,23 @@ async function fetchSteemBalance(account) {
   return null;
 }
 
+function readSession() {
+  try {
+    const value = sessionStorage.getItem(SESSION_KEY);
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    return /^[a-z0-9.-]{3,32}$/.test(parsed?.username || '') ? parsed.username : null;
+  } catch { return null; }
+}
+
+function writeSession(username) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ username }));
+}
+
+function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
 async function bootstrap() {
   const app = $('app');
   if (!app) throw new Error('APP_CONTAINER_MISSING');
@@ -57,85 +73,36 @@ async function bootstrap() {
 }
 
 function start() {
-  let username = null;
-  let postingKey = null;
-  let account = null;
-  let gameScore = 0;
-  let sessionQuestions = 0;
-  let sessionCorrect = 0;
+  let username = null, postingKey = null, account = null;
+  let gameScore = 0, sessionQuestions = 0, sessionCorrect = 0;
 
-  const loginView = $('loginView');
-  const home = $('homeView');
-  const leaderboard = $('leaderboardSection');
-  const gameView = $('gameView');
-  const answers = $('answers');
-  const feedback = $('feedback');
-  const next = $('nextButton');
-  const energy = $('energyValue');
-  const d2e = $('sfValue');
-  const steem = $('steemValue');
-  const assets = $('assetStats');
-  const counter = $('questionCounter');
-  const score = $('scoreLabel');
-  const flag = $('flagImage');
-  const newButton = $('newGameButton');
-  const resumeButton = $('resumeGameButton');
-  const summary = $('progressSummary');
-  const loginForm = $('loginForm');
-  const usernameInput = $('usernameInput');
-  const loginFeedback = $('loginFeedback');
-  const loggedIn = $('loggedInUser');
-  const language = $('languageSelect');
-  const progressBar = $('quizProgressBar');
-  const info = $('countryInfoLink');
+  const loginView = $('loginView'), home = $('homeView'), leaderboard = $('leaderboardSection'), gameView = $('gameView');
+  const answers = $('answers'), feedback = $('feedback'), next = $('nextButton');
+  const energy = $('energyValue'), d2e = $('sfValue'), steem = $('steemValue'), assets = $('assetStats');
+  const counter = $('questionCounter'), score = $('scoreLabel'), flag = $('flagImage');
+  const newButton = $('newGameButton'), resumeButton = $('resumeGameButton'), summary = $('progressSummary');
+  const loginForm = $('loginForm'), usernameInput = $('usernameInput'), loginFeedback = $('loginFeedback');
+  const loggedIn = $('loggedInUser'), language = $('languageSelect'), progressBar = $('quizProgressBar'), info = $('countryInfoLink');
 
   if (!loginForm || !loginView || !home || !gameView || !newButton) throw new Error('REQUIRED_UI_MISSING');
   const key = $('postingKeyInput');
   if (!key) throw new Error('POSTING_KEY_INPUT_MISSING');
-
   const game = new FlagGame(renderQuestion);
 
   function getLogoutButton() { return document.querySelector('[data-action="logout"]'); }
   function setLogoutVisible(visible) { const button = getLogoutButton(); if (button) button.hidden = !visible; }
+  function hideInfo() { if (!info) return; info.hidden = true; info.removeAttribute('href'); info.style.display = 'none'; }
+  function showInfo(name) { if (!info) return; const lang = getLanguage(); const host = lang === 'fa' ? 'fa' : lang === 'es' ? 'es' : 'en'; info.textContent = 'ℹ️ More information about this country'; info.href = `https://${host}.wikipedia.org/wiki/${encodeURIComponent(String(name).trim().replace(/ /g, '_'))}`; info.hidden = false; info.style.display = 'block'; }
+
   function bindLogout() {
     const button = getLogoutButton();
     if (!button || button.dataset.bound === '1') return;
     button.dataset.bound = '1';
     button.addEventListener('click', event => {
-      event.preventDefault();
-      username = null;
-      postingKey = null;
-      account = null;
-      game.reset();
-      gameScore = 0;
-      sessionQuestions = 0;
-      sessionCorrect = 0;
-      loginForm.reset();
-      loginFeedback.textContent = '';
-      loginView.hidden = false;
-      home.hidden = true;
-      leaderboard.hidden = true;
-      gameView.hidden = true;
-      setLogoutVisible(false);
-      hideInfo();
+      event.preventDefault(); clearSession(); username = null; postingKey = null; account = null; game.reset();
+      gameScore = 0; sessionQuestions = 0; sessionCorrect = 0; loginForm.reset(); loginFeedback.textContent = '';
+      loginView.hidden = false; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true; setLogoutVisible(false); hideInfo();
     });
-  }
-
-  function hideInfo() {
-    if (!info) return;
-    info.hidden = true;
-    info.removeAttribute('href');
-    info.style.display = 'none';
-  }
-
-  function showInfo(name) {
-    if (!info) return;
-    const lang = getLanguage();
-    const host = lang === 'fa' ? 'fa' : lang === 'es' ? 'es' : 'en';
-    info.textContent = 'ℹ️ More information about this country';
-    info.href = `https://${host}.wikipedia.org/wiki/${encodeURIComponent(String(name).trim().replace(/ /g, '_'))}`;
-    info.hidden = false;
-    info.style.display = 'block';
   }
 
   function applyAccountToUI() {
@@ -147,216 +114,70 @@ function start() {
 
   async function syncAccountFromD1() {
     if (!username) return null;
-    account = await fetchAccount(username);
-    applyAccountToUI();
-    if (assets) assets.hidden = false;
-    if (summary) summary.hidden = false;
+    account = await fetchAccount(username); applyAccountToUI();
+    if (assets) assets.hidden = false; if (summary) summary.hidden = false;
     if (loggedIn) loggedIn.textContent = `${t('loggedInAs')} @${username}`;
     if (resumeButton) resumeButton.hidden = true;
     refreshLeaderboardSF(username, d2e);
-    const balance = await fetchSteemBalance(username);
-    if (balance !== null && steem) steem.textContent = balance;
+    const balance = await fetchSteemBalance(username); if (balance !== null && steem) steem.textContent = balance;
     return account;
   }
 
-  function updateSessionSummary() {
-    if (!summary) return;
-    const accuracy = sessionQuestions ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0;
-    summary.textContent = `${t('gamesLabel')}: ${sessionQuestions ? 1 : 0} · ${t('accuracyLabel')}: ${accuracy}%`;
-  }
-
-  function setProgress(number) {
-    const value = Math.max(0, Math.min(game.totalQuestions, Number(number) || 0));
-    if (progressBar) {
-      progressBar.style.width = `${(value / game.totalQuestions) * 100}%`;
-      progressBar.setAttribute('aria-valuenow', String(value));
-    }
-  }
+  function updateSessionSummary() { if (!summary) return; const accuracy = sessionQuestions ? Math.round((sessionCorrect / sessionQuestions) * 100) : 0; summary.textContent = `${t('gamesLabel')}: ${sessionQuestions ? 1 : 0} · ${t('accuracyLabel')}: ${accuracy}%`; }
+  function setProgress(number) { const value = Math.max(0, Math.min(game.totalQuestions, Number(number) || 0)); if (progressBar) { progressBar.style.width = `${(value / game.totalQuestions) * 100}%`; progressBar.setAttribute('aria-valuenow', String(value)); } }
 
   function renderQuestion(question, points, number) {
-    counter.textContent = `${t('question')} ${number} ${t('of')} ${game.totalQuestions}`;
-    score.textContent = `${t('score')}: ${points}`;
-    setProgress(number);
-    flag.textContent = question.country[1];
-    answers.replaceChildren();
-    feedback.textContent = '';
-    feedback.className = 'feedback';
-    next.hidden = true;
-    hideInfo();
-    question.options.forEach(([name]) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'answer';
-      button.textContent = name;
-      button.onclick = () => chooseAnswer(button, name);
-      answers.appendChild(button);
-    });
+    counter.textContent = `${t('question')} ${number} ${t('of')} ${game.totalQuestions}`; score.textContent = `${t('score')}: ${points}`; setProgress(number); flag.textContent = question.country[1]; answers.replaceChildren(); feedback.textContent = ''; feedback.className = 'feedback'; next.hidden = true; hideInfo();
+    question.options.forEach(([name]) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'answer'; button.textContent = name; button.onclick = () => chooseAnswer(button, name); answers.appendChild(button); });
   }
 
   function chooseAnswer(button, name) {
     if (game.answered || game.completed || !username) return;
-    const result = game.answer(name);
-    if (!result) return;
-    sessionQuestions += 1;
-    if (result.correct) {
-      sessionCorrect += 1;
-      gameScore += 1;
-      feedback.textContent = `${t('correct')} +1 D2E`;
-      feedback.className = 'feedback ok';
-      button.classList.add('correct');
-    } else {
-      gameScore -= 1;
-      feedback.textContent = `${t('wrong')} ${result.answer}`;
-      feedback.className = 'feedback bad';
-      button.classList.add('wrong');
-    }
-    for (const item of answers.children) {
-      item.disabled = true;
-      if (item.textContent === result.answer) item.classList.add('correct');
-    }
-    score.textContent = `${t('score')}: ${gameScore}`;
-    updateSessionSummary();
-    showInfo(result.answer);
-    next.hidden = false;
+    const result = game.answer(name); if (!result) return;
+    sessionQuestions++; if (result.correct) { sessionCorrect++; gameScore++; feedback.textContent = `${t('correct')} +1 D2E`; feedback.className = 'feedback ok'; button.classList.add('correct'); } else { gameScore--; feedback.textContent = `${t('wrong')} ${result.answer}`; feedback.className = 'feedback bad'; button.classList.add('wrong'); }
+    for (const item of answers.children) { item.disabled = true; if (item.textContent === result.answer) item.classList.add('correct'); }
+    score.textContent = `${t('score')}: ${gameScore}`; updateSessionSummary(); showInfo(result.answer); next.hidden = false;
   }
 
-  function showHome() {
-    loginView.hidden = true;
-    home.hidden = false;
-    leaderboard.hidden = false;
-    gameView.hidden = true;
-    hideInfo();
-    bindLogout();
-    setLogoutVisible(true);
-    syncAccountFromD1().catch(error => console.error('Stats refresh failed', error));
-  }
-
-  function showGame() {
-    loginView.hidden = true;
-    home.hidden = true;
-    leaderboard.hidden = true;
-    gameView.hidden = false;
-    hideInfo();
-  }
+  function showHome() { loginView.hidden = true; home.hidden = false; leaderboard.hidden = false; gameView.hidden = true; hideInfo(); bindLogout(); setLogoutVisible(true); syncAccountFromD1().catch(error => console.error('Stats refresh failed', error)); }
+  function showGame() { loginView.hidden = true; home.hidden = true; leaderboard.hidden = true; gameView.hidden = false; hideInfo(); }
 
   async function newGame() {
-    if (!username) return;
-    newButton.disabled = true;
-    try {
-      account = await startGameOnServer(username);
-      applyAccountToUI();
-      gameScore = 0;
-      sessionQuestions = 0;
-      sessionCorrect = 0;
-      game.reset();
-      showGame();
-      game.next();
-    } catch (error) {
-      console.error('Unable to start game', error);
-      feedback.textContent = error?.message || 'Unable to start game.';
-      feedback.className = 'feedback bad';
-      await syncAccountFromD1();
-    }
+    if (!username) return; newButton.disabled = true;
+    try { account = await startGameOnServer(username); applyAccountToUI(); gameScore = 0; sessionQuestions = 0; sessionCorrect = 0; game.reset(); showGame(); game.next(); }
+    catch (error) { console.error('Unable to start game', error); feedback.textContent = error?.message || 'Unable to start game.'; feedback.className = 'feedback bad'; await syncAccountFromD1(); }
+  }
+
+  async function restoreSession() {
+    const savedUsername = readSession();
+    if (!savedUsername) return false;
+    username = savedUsername;
+    try { await syncAccountFromD1(); showHome(); return true; }
+    catch (error) { console.warn('Session restore failed', error); clearSession(); username = null; account = null; return false; }
   }
 
   loginForm.addEventListener('submit', async event => {
-    event.preventDefault();
-    const enteredUsername = usernameInput.value.trim().toLowerCase();
-    const enteredPostingKey = key.value.trim();
-    if (!/^[a-z0-9.-]{3,32}$/.test(enteredUsername) || !enteredPostingKey) {
-      loginFeedback.textContent = t('invalidPostingKey');
-      return;
-    }
+    event.preventDefault(); const enteredUsername = usernameInput.value.trim().toLowerCase(); const enteredPostingKey = key.value.trim();
+    if (!/^[a-z0-9.-]{3,32}$/.test(enteredUsername) || !enteredPostingKey) { loginFeedback.textContent = t('invalidPostingKey'); return; }
     loginFeedback.textContent = t('verifying');
-    try {
-      await verifyPostingKey(enteredUsername, enteredPostingKey);
-      username = enteredUsername;
-      postingKey = enteredPostingKey;
-      key.value = '';
-      await syncAccountFromD1();
-      loginFeedback.textContent = '';
-      showHome();
-    } catch (error) {
-      username = null;
-      postingKey = null;
-      console.error('Login failed', error);
-      loginFeedback.textContent = error?.message || t('invalidPostingKey');
-    }
+    try { await verifyPostingKey(enteredUsername, enteredPostingKey); username = enteredUsername; postingKey = enteredPostingKey; key.value = ''; writeSession(username); await syncAccountFromD1(); loginFeedback.textContent = ''; showHome(); }
+    catch (error) { clearSession(); username = null; postingKey = null; console.error('Login failed', error); loginFeedback.textContent = error?.message || t('invalidPostingKey'); }
   });
 
-  if (language) {
-    language.addEventListener('change', () => {
-      setLanguage(language.value);
-      applyLanguage(document, getLanguage());
-      if (!gameView.hidden && game.current) renderQuestion(game.current, game.score, game.questionNumber);
-    });
-  }
-
+  if (language) language.addEventListener('change', () => { setLanguage(language.value); applyLanguage(document, getLanguage()); if (!gameView.hidden && game.current) renderQuestion(game.current, game.score, game.questionNumber); });
   newButton.onclick = newGame;
-  if (resumeButton) {
-    resumeButton.hidden = true;
-    resumeButton.onclick = () => {};
-  }
-
+  if (resumeButton) { resumeButton.hidden = true; resumeButton.onclick = () => {}; }
   next.onclick = async () => {
-    if (!game.isComplete()) {
-      game.next();
-      return;
-    }
-
+    if (!game.isComplete()) { game.next(); return; }
     next.disabled = true;
-    try {
-      const eventId = `${username}-${Date.now()}-${crypto.randomUUID()}`;
-      const result = await saveGameResult({ username, score: gameScore, eventId });
-      if (!result.success) {
-        feedback.textContent = result.error || 'Unable to save game result. Please try again.';
-        feedback.className = 'feedback bad';
-        next.disabled = false;
-        return;
-      }
-      account = result.account;
-      applyAccountToUI();
-      d2e.textContent = String(Number(account.D2E) || 0);
-      energy.textContent = String(Number(account.Energy) || 0);
-      next.disabled = false;
-      showHome();
-    } catch (error) {
-      console.error('Game result save failed', error);
-      feedback.textContent = error?.message || 'Unable to save game result. Please try again.';
-      feedback.className = 'feedback bad';
-      next.disabled = false;
-    }
+    try { const eventId = `${username}-${Date.now()}-${crypto.randomUUID()}`; const result = await saveGameResult({ username, score: gameScore, eventId }); if (!result.success) throw new Error(result.error || 'Unable to save game result. Please try again.'); account = result.account; applyAccountToUI(); next.disabled = false; showHome(); }
+    catch (error) { console.error('Game result save failed', error); feedback.textContent = error?.message || 'Unable to save game result. Please try again.'; feedback.className = 'feedback bad'; next.disabled = false; }
   };
 
-  document.querySelectorAll('[data-action="home"]').forEach(button => button.addEventListener('click', showHome));
-  document.querySelectorAll('[data-action="reset"]').forEach(button => button.addEventListener('click', () => {
-    game.reset();
-    gameScore = 0;
-    sessionQuestions = 0;
-    sessionCorrect = 0;
-    showHome();
-  }));
-
-  window.addEventListener('steemflags:logout', () => {
-    const button = getLogoutButton();
-    if (button) button.click();
-  });
+  window.addEventListener('steemflags:logout', () => { const button = getLogoutButton(); if (button) button.click(); });
   window.addEventListener('steemflags:new-game', () => { if (username) newGame(); });
-
-  applyLanguage(document, getLanguage());
-  bindLogout();
-  setLogoutVisible(false);
-  loginView.hidden = false;
-  home.hidden = true;
-  leaderboard.hidden = true;
-  gameView.hidden = true;
-  hideInfo();
+  applyLanguage(document, getLanguage()); bindLogout(); setLogoutVisible(false); loginView.hidden = false; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true; hideInfo();
+  restoreSession();
 }
 
-bootstrap().catch(error => {
-  console.error('Steem Flags startup failed', error);
-  const loading = $('loading');
-  if (loading) {
-    loading.innerHTML = `<h2>Unable to load the game</h2><p>Startup error: ${String(error?.message || error)}</p><p>Please refresh the page.</p>`;
-  }
-});
+bootstrap().catch(error => { console.error('Steem Flags startup failed', error); const loading = $('loading'); if (loading) loading.innerHTML = `<h2>Unable to load the game</h2><p>Startup error: ${String(error?.message || error)}</p><p>Please refresh the page.</p>`; });
