@@ -18,7 +18,7 @@
         </svg>
 
         <div class="sf-loader-logo" aria-hidden="true">
-          <img src="assets/steemflags-logo.svg" alt="">
+          <img src="./assets/steemflags-logo.svg" alt="Steem Flags official logo" decoding="async">
         </div>
 
         <div class="sf-loader-status">
@@ -75,9 +75,6 @@
 
     setProgress(8);
 
-    // The progress is deliberately capped while the application is bootstrapping.
-    // It cannot reach 100% until app-v2.js explicitly reports that the full page
-    // initialization (components, menu, session/account restore) has completed.
     const progressTimer = window.setInterval(() => {
       if (progress >= 92) {
         window.clearInterval(progressTimer);
@@ -95,9 +92,6 @@
     }
 
     window.addEventListener('steemflags:ready', onAppReady, { once: true });
-
-    // Protect against a very fast cached module completing before this listener
-    // is registered.
     if (window.__steemFlagsReady) onAppReady({ detail: window.__steemFlagsReady });
   }
 
