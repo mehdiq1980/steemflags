@@ -34,13 +34,11 @@
     document.body.insertAdjacentHTML('afterbegin', preloaderMarkup);
 
     const preloader = document.getElementById('sf-preloader');
-    const app = document.getElementById('app');
     const progressCircle = preloader.querySelector('.sf-loader-ring-progress');
     const percentText = preloader.querySelector('.sf-loader-percent');
     const spark = preloader.querySelector('.sf-loader-spark');
     let progress = 0;
     let finished = false;
-    let ready = false;
 
     function setProgress(value) {
       progress = Math.max(0, Math.min(100, Math.round(value)));
@@ -57,26 +55,6 @@
       }
     }
 
-    function finishLoading() {
-      if (ready) return;
-      ready = true;
-      const finish = () => {
-        setProgress(100);
-        window.setTimeout(hidePreloader, 280);
-      };
-      if (progress < 100) {
-        const timer = window.setInterval(() => {
-          setProgress(progress + 2);
-          if (progress >= 100) {
-            window.clearInterval(timer);
-            window.setTimeout(hidePreloader, 280);
-          }
-        }, 18);
-      } else {
-        finish();
-      }
-    }
-
     function hidePreloader() {
       if (finished || !preloader) return;
       finished = true;
@@ -84,46 +62,43 @@
       window.setTimeout(() => preloader.remove(), 650);
     }
 
+    function finishLoading() {
+      if (finished) return;
+      const timer = window.setInterval(() => {
+        setProgress(progress + 2);
+        if (progress >= 100) {
+          window.clearInterval(timer);
+          window.setTimeout(hidePreloader, 280);
+        }
+      }, 18);
+    }
+
     setProgress(8);
 
+    // The progress is deliberately capped while the application is bootstrapping.
+    // It cannot reach 100% until app-v2.js explicitly reports that the full page
+    // initialization (components, menu, session/account restore) has completed.
     const progressTimer = window.setInterval(() => {
-      if (ready || progress >= 92) return;
+      if (progress >= 92) {
+        window.clearInterval(progressTimer);
+        return;
+      }
       const step = progress < 55 ? 2 : progress < 78 ? 1 : 0.5;
       setProgress(progress + step);
     }, 140);
 
-    function gameIsReady() {
-      const heading = app?.querySelector('h1');
-      return !!(heading && !heading.textContent.includes('Loading Steem Flags'));
+    function onAppReady(event) {
+      window.clearInterval(progressTimer);
+      finishLoading();
+      window.removeEventListener('steemflags:ready', onAppReady);
+      window.__steemFlagsReady = event?.detail || { success: true };
     }
 
-    if (app) {
-      const observer = new MutationObserver(() => {
-        if (gameIsReady()) {
-          observer.disconnect();
-          window.clearInterval(progressTimer);
-          finishLoading();
-        }
-      });
-      observer.observe(app, { childList: true, subtree: true, characterData: true });
+    window.addEventListener('steemflags:ready', onAppReady, { once: true });
 
-      if (gameIsReady()) {
-        observer.disconnect();
-        window.clearInterval(progressTimer);
-        finishLoading();
-      }
-    }
-
-    window.addEventListener('load', () => {
-      if (!ready) {
-        window.setTimeout(() => {
-          if (gameIsReady()) {
-            window.clearInterval(progressTimer);
-            finishLoading();
-          }
-        }, 350);
-      }
-    }, { once: true });
+    // Protect against a very fast cached module completing before this listener
+    // is registered.
+    if (window.__steemFlagsReady) onAppReady({ detail: window.__steemFlagsReady });
   }
 
   if (document.readyState === 'loading') {
