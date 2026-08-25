@@ -7,7 +7,6 @@
     preloader.dataset.initialized = '1';
 
     const progressCircle = preloader.querySelector('.sf-loader-ring-progress');
-    const percentText = preloader.querySelector('.sf-loader-percent');
     let progress = 0;
     let finished = false;
 
@@ -17,7 +16,6 @@
         progressCircle.style.strokeDasharray = '100';
         progressCircle.style.strokeDashoffset = String(100 - progress);
       }
-      if (percentText) percentText.textContent = String(progress);
     }
 
     function finish() {
