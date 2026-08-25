@@ -9,14 +9,17 @@
   <meta name="robots" content="index,follow">
   <title>Steem Flags</title>
   <link rel="stylesheet" href="css/style.css?v=20260820-01">
-  <link rel="stylesheet" href="css/preloader.css?v=20260825-07">
+  <link rel="stylesheet" href="css/preloader.css?v=20260825-08">
   <script src="js/preloader.js?v=20260825-07" defer></script>
 </head>
 <body>
   <div id="sf-preloader" role="status" aria-label="Loading Steem Flags">
     <div class="sf-loader-inner">
       <div class="sf-loader-logo" aria-hidden="true">
-        <img src="https://raw.githubusercontent.com/mehdiq1980/steemflags/275937b489fd47e79ec71d509dae12ca8dc772e6/assets/steemflags_logo.png" alt="Steem Flags official logo" decoding="async">
+        <img class="sf-loader-logo-base" src="https://raw.githubusercontent.com/mehdiq1980/steemflags/275937b489fd47e79ec71d509dae12ca8dc772e6/assets/steemflags_logo.png" alt="Steem Flags official logo" decoding="async">
+        <div class="sf-loader-flag-wave" aria-hidden="true">
+          <img src="https://raw.githubusercontent.com/mehdiq1980/steemflags/275937b489fd47e79ec71d509dae12ca8dc772e6/assets/steemflags_logo.png" alt="" decoding="async">
+        </div>
       </div>
       <svg class="sf-loader-ring" viewBox="0 0 100 100" aria-hidden="true">
         <defs>
@@ -25,6 +28,10 @@
             <stop offset="65%" stop-color="#087cff"/>
             <stop offset="100%" stop-color="#72c8ff"/>
           </linearGradient>
+          <filter id="sfFlagWave" x="-15%" y="-20%" width="130%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.018 0.055" numOctaves="2" seed="7" result="noise"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
         </defs>
         <circle class="sf-loader-ring-track" cx="50" cy="50" r="46" pathLength="100"></circle>
         <circle class="sf-loader-ring-progress" cx="50" cy="50" r="46" pathLength="100"></circle>
