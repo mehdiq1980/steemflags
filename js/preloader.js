@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  const OFFICIAL_LOGO = '/steemflags/assets/steemflags-logo.svg';
+
   const preloaderMarkup = `
     <div id="sf-preloader" role="status" aria-label="Loading Steem Flags">
       <div class="sf-loader-inner">
@@ -18,7 +20,7 @@
         </svg>
 
         <div class="sf-loader-logo" aria-hidden="true">
-          <img src="./assets/steemflags-logo.svg" alt="Steem Flags official logo" decoding="async">
+          <img id="sf-official-logo" src="${OFFICIAL_LOGO}" alt="Steem Flags official logo" decoding="async">
         </div>
 
         <div class="sf-loader-status">
@@ -34,11 +36,18 @@
     document.body.insertAdjacentHTML('afterbegin', preloaderMarkup);
 
     const preloader = document.getElementById('sf-preloader');
+    const logo = document.getElementById('sf-official-logo');
     const progressCircle = preloader.querySelector('.sf-loader-ring-progress');
     const percentText = preloader.querySelector('.sf-loader-percent');
     const spark = preloader.querySelector('.sf-loader-spark');
     let progress = 0;
     let finished = false;
+
+    if (logo) {
+      logo.addEventListener('error', () => {
+        console.error('Steem Flags official logo failed to load:', OFFICIAL_LOGO);
+      }, { once: true });
+    }
 
     function setProgress(value) {
       progress = Math.max(0, Math.min(100, Math.round(value)));
