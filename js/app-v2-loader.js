@@ -10,6 +10,7 @@ async function startSteemFlags() {
       const detail = String(error?.message || error || 'Module failed to load').replace(/[<>&]/g, '');
       app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Module error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
     }
+    window.dispatchEvent(new CustomEvent('steemflags:ready', { detail: { success: false, error } }));
   }
 }
 
