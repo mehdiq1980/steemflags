@@ -2,8 +2,8 @@ const app = document.getElementById('app');
 
 async function startSteemFlags() {
   try {
-    // Cache-bust the application module so the latest gameplay feedback is loaded after deployment.
-    await import('./app-v2.js?v=20260825-game-feedback-03');
+    // Cache-bust the application module so the latest bootstrap/readiness logic is loaded after deployment.
+    await import('./app-v2.js?v=20260825-preloader-ready-01');
   } catch (error) {
     console.error('Steem Flags module load failed:', error);
     if (app) {
