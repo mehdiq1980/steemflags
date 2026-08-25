@@ -9,78 +9,29 @@
   <meta name="robots" content="index,follow">
   <title>Steem Flags</title>
   <link rel="stylesheet" href="css/style.css?v=20260820-01">
-  <style>
-    #sf-preloader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:radial-gradient(circle at 50% 38%,#18264b 0,#0d1529 42%,#080d1a 78%);transition:opacity .55s ease,visibility .55s ease}
-    #sf-preloader.sf-loaded{opacity:0;visibility:hidden;pointer-events:none}
-    .sf-loader-inner{width:min(82vw,330px);display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center}
-    .sf-loader-logo{position:relative;width:170px;height:170px;display:grid;place-items:center}
-    .sf-loader-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -90deg,transparent 0deg,#5b7cfa 75deg,#64dfb2 170deg,#5b7cfa 270deg,transparent 360deg);animation:sf-ring 1.7s linear infinite;filter:drop-shadow(0 0 9px #5b7cfa88)}
-    .sf-loader-ring:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#0b1223}
-    .sf-loader-flag{position:relative;width:112px;height:76px;z-index:2;transform-origin:left center;animation:sf-wave 1.25s ease-in-out infinite;filter:drop-shadow(0 10px 14px #0008)}
-    .sf-loader-flag:before{content:"";position:absolute;left:0;top:0;width:8px;height:76px;border-radius:5px;background:#d9e1f2;box-shadow:0 0 8px #fff4}
-    .sf-loader-cloth{position:absolute;left:8px;top:5px;width:104px;height:66px;border-radius:2px 8px 8px 2px;background:linear-gradient(180deg,#fff 0 33%,#d71920 33% 66%,#1f4e9b 66%);clip-path:polygon(0 0,100% 8%,96% 92%,0 100%);overflow:hidden}
-    .sf-loader-cloth:after{content:"★";position:absolute;left:35px;top:7px;color:#fff;font-size:37px;line-height:1;text-shadow:0 1px 4px #0006;opacity:.9}
-    .sf-loader-title{margin:0;color:#fff;font-size:1.25rem;letter-spacing:.16em;font-weight:900;text-transform:uppercase}
-    .sf-loader-subtitle{margin:0;color:#8fa9dc;font-size:.82rem}
-    .sf-loader-bar{width:190px;height:4px;border-radius:999px;background:#202d49;overflow:hidden}
-    .sf-loader-bar:after{content:"";display:block;width:45%;height:100%;border-radius:999px;background:linear-gradient(90deg,#5b7cfa,#64dfb2,#5b7cfa);animation:sf-progress 1.25s ease-in-out infinite}
-    @keyframes sf-ring{to{transform:rotate(360deg)}}
-    @keyframes sf-wave{0%,100%{transform:perspective(180px) rotateY(8deg) skewY(0deg) scaleX(1)}50%{transform:perspective(180px) rotateY(-22deg) skewY(4deg) scaleX(.94)}}
-    @keyframes sf-progress{0%{transform:translateX(-120%)}100%{transform:translateX(360%)}}
-    @media(prefers-reduced-motion:reduce){.sf-loader-ring,.sf-loader-flag,.sf-loader-bar:after{animation-duration:3s}.sf-loader-flag{animation:none}}
-  </style>
+  <link rel="stylesheet" href="css/preloader.css?v=20260825-01">
+  <script src="js/preloader.js?v=20260825-01" defer></script>
 </head>
 <body>
-  <div id="sf-preloader" role="status" aria-label="Loading Steem Flags">
-    <div class="sf-loader-inner">
-      <div class="sf-loader-logo" aria-hidden="true">
-        <div class="sf-loader-ring"></div>
-        <div class="sf-loader-flag"><div class="sf-loader-cloth"></div></div>
-      </div>
-      <h1 class="sf-loader-title">Steem Flags</h1>
-      <p class="sf-loader-subtitle">Preparing the game…</p>
-      <div class="sf-loader-bar" aria-hidden="true"></div>
-    </div>
-  </div>
-
   <div id="app" aria-live="polite"><main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Loading Steem Flags…</h1><p class="muted">Preparing the game interface.</p></section></div>
   <noscript><main class="appShell"><section class="card hero"><h1>Steem Flags</h1><p class="muted">JavaScript is required to play the game.</p></section></noscript>
   <script>
-    (function () {
-      const preloader = document.getElementById('sf-preloader');
+    window.addEventListener('error', function (event) {
+      console.error('Steem Flags startup error:', event.error || event.message);
       const app = document.getElementById('app');
-      let finished = false;
-      function hidePreloader() {
-        if (finished || !preloader) return;
-        finished = true;
-        preloader.classList.add('sf-loaded');
-        setTimeout(() => preloader.remove(), 650);
+      if (app && app.querySelector('h1')?.textContent.includes('Loading')) {
+        const detail = String(event.error?.message || event.message || 'JavaScript module failed to load').replace(/[<>&]/g, '');
+        app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
       }
-      if (app) {
-        const observer = new MutationObserver(() => {
-          const heading = app.querySelector('h1');
-          if (heading && !heading.textContent.includes('Loading Steem Flags')) hidePreloader();
-        });
-        observer.observe(app, { childList: true, subtree: true });
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      console.error('Steem Flags startup rejection:', event.reason);
+      const app = document.getElementById('app');
+      if (app && app.querySelector('h1')?.textContent.includes('Loading')) {
+        const detail = String(event.reason?.message || event.reason || 'Module startup failed').replace(/[<>&]/g, '');
+        app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Module error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
       }
-      window.addEventListener('load', () => setTimeout(hidePreloader, 900));
-      window.addEventListener('error', function (event) {
-        console.error('Steem Flags startup error:', event.error || event.message);
-        const app = document.getElementById('app');
-        if (app && app.querySelector('h1')?.textContent.includes('Loading')) {
-          const detail = String(event.error?.message || event.message || 'JavaScript module failed to load').replace(/[<>&]/g, '');
-          app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
-        }
-      });
-      window.addEventListener('unhandledrejection', function (event) {
-        console.error('Steem Flags startup rejection:', event.reason);
-        const app = document.getElementById('app');
-        if (app && app.querySelector('h1')?.textContent.includes('Loading')) {
-          const detail = String(event.reason?.message || event.reason || 'Module startup failed').replace(/[<>&]/g, '');
-          app.innerHTML = '<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Module error: ' + detail + '</p><p class="muted">Please refresh the page.</p></section></main>';
-        }
-      });
-    })();
+    });
   </script>
   <script src="https://unpkg.com/dsteem@0.11.3/dist/dsteem.js"></script>
   <script src="js/config.js?v=20260820-01"></script>
