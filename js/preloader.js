@@ -10,12 +10,14 @@
 
     const progressCircle = preloader.querySelector('.sf-loader-ring-progress');
     const canvas = preloader.querySelector('.sf-loader-flag-wave');
+    const baseLogo = preloader.querySelector('.sf-loader-logo-base');
     const motionOK = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let progress = 0;
     let finished = false;
     let waveFrame = 0;
     let flagImage = null;
     let resizeObserver = null;
+    let fallback = 0;
 
     function setProgress(value) {
       progress = Math.max(0, Math.min(100, Math.round(value)));
@@ -33,8 +35,21 @@
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
     }
 
-    // The cloth is represented by vertical strips. The hoist edge stays almost fixed;
-    // wave amplitude grows toward the free edge, producing the characteristic flag motion.
+    function clothPath(ctx, w, h) {
+      // Exact animation mask is deliberately confined to the fabric silhouette.
+      // The pole, badge, text and all lower logo artwork remain outside this path.
+      const left = w * 0.090;
+      const right = w * 0.905;
+      ctx.beginPath();
+      ctx.moveTo(left, h * 0.028);
+      ctx.lineTo(right, h * 0.028);
+      ctx.lineTo(right, h * 0.285);
+      ctx.bezierCurveTo(w * 0.835, h * 0.305, w * 0.755, h * 0.350, w * 0.665, h * 0.345);
+      ctx.bezierCurveTo(w * 0.555, h * 0.338, w * 0.500, h * 0.300, w * 0.405, h * 0.315);
+      ctx.bezierCurveTo(w * 0.295, h * 0.333, w * 0.205, h * 0.345, left, h * 0.305);
+      ctx.closePath();
+    }
+
     function drawFlagCloth(time) {
       if (!canvas || !flagImage || !flagImage.complete || !flagImage.naturalWidth) return;
       const ctx = canvas.getContext('2d');
@@ -42,52 +57,55 @@
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       if (!w || !h) return;
+
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) resizeCanvas();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
-      // Coordinates are normalized to the official logo. Only this polygon is drawn.
-      const left = w * 0.092;
-      const right = w * 0.92;
+      // First render the official logo exactly as supplied. This guarantees that
+      // every part except the fabric is pixel-stable.
+      ctx.drawImage(flagImage, 0, 0, w, h);
+
+      const left = w * 0.090;
+      const right = w * 0.905;
       const top = h * 0.028;
-      const bottom = h * 0.36;
-      const cols = Math.max(28, Math.min(64, Math.round(w / 5)));
+      const bottom = h * 0.345;
+      const cols = Math.max(36, Math.min(72, Math.round(w / 4)));
       const t = time * 0.001;
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(left, top);
-      ctx.lineTo(right, top);
-      ctx.lineTo(right, bottom * 0.97);
-      ctx.bezierCurveTo(w * 0.83, h * 0.34, w * 0.72, h * 0.40, w * 0.61, h * 0.36);
-      ctx.bezierCurveTo(w * 0.50, h * 0.32, w * 0.41, h * 0.40, w * 0.30, h * 0.36);
-      ctx.bezierCurveTo(w * 0.20, h * 0.33, w * 0.13, h * 0.38, left, h * 0.34);
-      ctx.closePath();
-      ctx.clip();
-
-      // Draw narrow source strips with a phase-delayed displacement. This creates
-      // propagating folds instead of rotating the whole logo.
       const sourceW = flagImage.naturalWidth;
       const sourceH = flagImage.naturalHeight;
+      const sy = sourceH * 0.028;
+      const sh = sourceH * 0.317;
+
+      // Only the fabric mask can receive the deformation.
+      ctx.save();
+      clothPath(ctx, w, h);
+      ctx.clip();
+
       for (let i = 0; i < cols; i++) {
         const u0 = i / cols;
         const u1 = (i + 1) / cols;
         const x0 = left + (right - left) * u0;
-        const x1 = left + (right - left) * u1;
-        const amp = 0.8 + Math.pow(u0, 1.7) * 5.8;
-        const phase = t * 3.0 - u0 * 10.5;
-        const wave = Math.sin(phase) * amp + Math.sin(phase * 0.47 + 1.4) * amp * 0.22;
-        const depth = Math.cos(phase) * amp * 0.34;
-        const shear = Math.sin(phase + 0.7) * amp * 0.10;
-        const sy = sourceH * 0.028;
-        const sh = sourceH * 0.34;
-        const sx = sourceW * u0;
-        const sw = Math.max(1, sourceW * (u1 - u0));
+        const stripW = (right - left) / cols + 1.2;
+
+        // Pinned at the pole, increasingly flexible toward the free edge.
+        const influence = Math.pow(u0, 1.85);
+        const primary = Math.sin(t * 4.15 - u0 * 12.5) * (1.0 + influence * 7.2);
+        const secondary = Math.sin(t * 6.1 - u0 * 20.0 + 0.9) * influence * 1.7;
+        const waveY = primary + secondary;
+        const depth = Math.cos(t * 4.15 - u0 * 12.5) * influence * 2.6;
+        const shear = Math.sin(t * 4.15 - u0 * 12.5 + 0.8) * influence * 0.075;
+
+        // Subtle perspective compression makes the fabric fold rather than slide.
+        const scaleX = 1 - influence * 0.055 + depth * 0.002;
+        const sourceX = sourceW * u0;
+        const sourceStripW = Math.max(1, sourceW * (u1 - u0));
+
         ctx.save();
-        ctx.translate(x0, top + wave);
-        ctx.transform(1, shear / Math.max(1, h), depth / Math.max(1, w), 1, 0, 0);
-        ctx.drawImage(flagImage, sx, sy, sw, sh, 0, 0, x1 - x0 + 1, bottom - top + 2);
+        ctx.translate(x0, top + waveY);
+        ctx.transform(scaleX, shear, 0, 1, 0, 0);
+        ctx.drawImage(flagImage, sourceX, sy, sourceStripW, sh, 0, 0, stripW, bottom - top + 2);
         ctx.restore();
       }
       ctx.restore();
@@ -133,6 +151,10 @@
       animateToReady();
     }
 
+    // The base <img> is retained as the authoritative source but hidden visually;
+    // the canvas draws it unchanged first and then deforms only the fabric mask.
+    if (baseLogo) baseLogo.style.visibility = 'hidden';
+
     flagImage = new Image();
     flagImage.decoding = 'async';
     flagImage.onload = function () {
@@ -151,7 +173,7 @@
 
     setProgress(1);
 
-    const fallback = window.setTimeout(function () {
+    fallback = window.setTimeout(function () {
       if (!finished) animateToReady();
     }, 3500);
 
