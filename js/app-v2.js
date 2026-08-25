@@ -8,7 +8,8 @@ const API_BASE = 'https://steemflags.mehdiq.workers.dev';
 const SESSION_KEY = 'steemFlagsAuthSession';
 const $ = id => document.getElementById(id);
 
-async function loadComponent() { const response = await fetch('./components/app-shell.html?v=20260826-steem-avatar-01', { cache: 'no-store' }); if (!response.ok) throw new Error(`Unable to load component: ${response.status}`); return response.text(); }
+async function loadComponent() { const response = await fetch('./components/app-shell.html?v=20260826-assetbar-02', { cache: 'no-store' }); if (!response.ok) throw new Error(`Unable to load component: ${response.status}`); return response.text(); }
+async function loadAssetBar() { const mount = $('assetBarMount'); if (!mount) return; const response = await fetch('./components/asset-bar.html?v=20260826-assetbar-01', { cache: 'no-store' }); if (!response.ok) throw new Error(`Unable to load asset bar: ${response.status}`); mount.innerHTML = await response.text(); }
 async function fetchAccount(username) { let response; try { response = await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(username)}`, { cache: 'no-store' }); } catch { throw new Error('ACCOUNT_NETWORK_ERROR'); } if (!response.ok) throw new Error(`ACCOUNT_API_${response.status}`); const data = await response.json(); if (!data?.success || !data.account) throw new Error('ACCOUNT_API_INVALID'); return data.account; }
 async function fetchAccounts(limit = 100) { const response = await fetch(`${API_BASE}/api/accounts?limit=${limit}`, { cache: 'no-store' }); if (!response.ok) throw new Error(`LEADERBOARD_API_${response.status}`); const data = await response.json(); if (!data?.success || !Array.isArray(data.accounts)) throw new Error('LEADERBOARD_API_INVALID'); return data.accounts; }
 async function startGameOnServer(username) { const response = await fetch(`${API_BASE}/api/game/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }), cache: 'no-store' }); const data = await response.json(); if (!response.ok || !data?.success) throw new Error(data?.error || `GAME_START_${response.status}`); return data.account; }
@@ -17,7 +18,7 @@ function readSession() { try { const value = localStorage.getItem(SESSION_KEY); 
 function writeSession(username) { localStorage.setItem(SESSION_KEY, JSON.stringify({ username })); }
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
-async function bootstrap() { const app = $('app'); if (!app) throw new Error('APP_CONTAINER_MISSING'); app.innerHTML = await loadComponent(); await loadMenu(); await start(); }
+async function bootstrap() { const app = $('app'); if (!app) throw new Error('APP_CONTAINER_MISSING'); app.innerHTML = await loadComponent(); await loadAssetBar(); await loadMenu(); await start(); }
 
 async function start() {
   let username = null, postingKey = null, account = null; let gameScore = 0, sessionQuestions = 0, sessionCorrect = 0;
@@ -42,6 +43,4 @@ async function start() {
   window.addEventListener('steemflags:logout', () => { const button = getLogoutButton(); if (button) button.click(); }); window.addEventListener('steemflags:new-game', () => { if (username) newGame(); }); applyLanguage(document, getLanguage()); bindLogout(); setLogoutVisible(false); loginView.hidden = true; home.hidden = true; leaderboard.hidden = true; gameView.hidden = true; hideInfo(); const restored = await restoreSession(); if (!restored) loginView.hidden = false;
 }
 
-bootstrap().then(() => {
-  window.dispatchEvent(new CustomEvent('steemflags:ready', { detail: { success: true } }));
-}).catch(error => { console.error('Steem Flags startup failed', error); const loading = $('loading'); if (loading) loading.innerHTML = `<h2>Unable to load the game</h2><p>Startup error: ${String(error?.message || error)}</p><p>Please refresh the page.</p>`; window.dispatchEvent(new CustomEvent('steemflags:ready', { detail: { success: false, error } })); });
+bootstrap().then(() => { window.dispatchEvent(new CustomEvent('steemflags:ready', { detail: { success: true } })); }).catch(error => { console.error('Steem Flags startup failed', error); const loading = $('loading'); if (loading) loading.innerHTML = `<h2>Unable to load the game</h2><p>Startup error: ${String(error?.message || error)}</p><p>Please refresh the page.</p>`; window.dispatchEvent(new CustomEvent('steemflags:ready', { detail: { success: false, error } })); });
