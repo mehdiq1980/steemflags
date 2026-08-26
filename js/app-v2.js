@@ -2,7 +2,7 @@ import { FlagGame } from './game.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
 import { saveGameResult } from './reward.js?v=20260825-d1-game-01';
-import { loadMenu } from './menu.js?v=20260825-menu-03';
+import { loadMenu } from './menu.js?v=20260826-menu-04';
 
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
 const SESSION_KEY = 'steemFlagsAuthSession';
