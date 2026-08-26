@@ -1,5 +1,5 @@
 // Steem Flags More Information Patch
-// Automatically hooks answer buttons without changing app-v2.js
+// Waits for dynamically loaded app-shell and exposes More Information handler.
 
 (function(){
   function showMoreInformation(countryName){
@@ -7,37 +7,22 @@
     if(!info || !countryName) return;
 
     info.hidden=false;
-    info.style.display='block';
+    info.style.removeProperty('display');
     info.textContent='More Information...';
     info.href=`https://en.wikipedia.org/wiki/${encodeURIComponent(countryName)}`;
     info.target='_blank';
+    info.removeAttribute('aria-hidden');
+    info.removeAttribute('tabindex');
   }
 
   window.showMoreInformation=showMoreInformation;
 
-  function hookAnswers(){
-    const answers=document.getElementById('answers');
-    if(!answers) return;
+  const observer=new MutationObserver(()=>{
+    const info=document.getElementById('countryInfoLink');
+    if(info){
+      info.dataset.moreInfoReady='true';
+    }
+  });
 
-    const observer=new MutationObserver(()=>{
-      [...answers.children].forEach(button=>{
-        if(button.dataset.moreInfoHooked) return;
-        const oldClick=button.onclick;
-        button.onclick=function(event){
-          if(oldClick) oldClick.call(this,event);
-          setTimeout(()=>{
-            const text=document.getElementById('feedback')?.textContent||'';
-            const country=text.split('\n')[1] || '';
-            if(country) showMoreInformation(country);
-          },50);
-        };
-        button.dataset.moreInfoHooked='1';
-      });
-    });
-
-    observer.observe(answers,{childList:true});
-  }
-
-  document.addEventListener('DOMContentLoaded',hookAnswers);
-  setTimeout(hookAnswers,1000);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
 })();
