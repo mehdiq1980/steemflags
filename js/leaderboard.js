@@ -1,47 +1,49 @@
-import { t } from './i18n.js';
+const API_BASE='https://steemflags.mehdiq.workers.dev';
 
-const root = document.getElementById('leaderboard');
-const LEADERBOARD_TITLE = '🏆 Steem Flags Leaderboard';
-const DATA_URL = './data/leaderboard.json';
+const status=document.getElementById('leaderboardStatus');
+const body=document.getElementById('leaderboardBody');
 
-function avatarUrl(username) {
+function avatarUrl(username){
   return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>\'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function escapeHtml(value){
+  return String(value).replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
 }
 
-function render(rows) {
-  const body = rows.map((row,index)=>{
-    const username=String(row.username||'—');
-    const sf=Number(row.sf||0);
-    const avatar=row.avatar||avatarUrl(username);
+function render(accounts){
+  if(!body)return;
+  const rows=accounts.map((account,index)=>{
+    const username=String(account?.Username||account?.username||'—');
+    const d2e=Math.max(0,Number(account?.D2E??account?.d2e)||0);
     const medal=index===0?'🥇':index===1?'🥈':index===2?'🥉':String(index+1);
-    return `<tr><td class="rank">${medal}</td><td class="leaderPlayer"><img class="leaderAvatar" src="${avatar}" alt="@${username}"><span>@${escapeHtml(username)}</span></td><td>${sf.toLocaleString()} D2E</td></tr>`;
+    const avatar=avatarUrl(username);
+    return `<tr><td>${medal}</td><td><div class="leaderboardUser"><img class="leaderboardAvatar" src="${avatar}" alt="@${escapeHtml(username)}" loading="lazy" onerror="this.style.visibility='hidden'"><span>@${escapeHtml(username)}</span></div></td><td>${d2e.toLocaleString()} D2E</td></tr>`;
   }).join('');
-
-  const rewardPool = `<div class="rewardPool disabled"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
-
-  if(!document.getElementById('rewardPoolStyle')){
-    const style=document.createElement('style');
-    style.id='rewardPoolStyle';
-    style.textContent=`.rewardPool{margin:12px 0 18px;padding:16px;border:1px solid rgba(255,255,255,.28);border-radius:24px;text-align:center;background:linear-gradient(145deg,#111827,#0f172a)}.rewardPool h3{margin:0 0 12px}.rewardPool p{margin:6px 0;text-align:left}.rewardPool.disabled{opacity:.45;filter:grayscale(70%);pointer-events:none}`;
-    document.head.appendChild(style);
-  }
-
-  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2>${rewardPool}<table><thead><tr><th>${t('rank')}</th><th>${t('player')}</th><th>${t('sf')}</th></tr></thead><tbody>${body}</tbody></table>`;
+  body.innerHTML=rows||'<tr><td colspan="3" class="muted">No players yet.</td></tr>';
+  if(status)status.hidden=true;
 }
 
 async function loadLeaderboard(){
- try{
-  const response=await fetch(`${DATA_URL}?v=${Date.now()}`,{cache:'no-store'});
-  const data=await response.json();
-  const rows=Object.entries(data.players||{}).map(([username,value])=>({username,sf:Number(value?.sf||0),avatar:value?.avatar})).sort((a,b)=>b.sf-a.sf).slice(0,100);
-  render(rows);
- }catch(e){
-  root.innerHTML=`<h2>${LEADERBOARD_TITLE}</h2><div class="rewardPool disabled"><h3>💰 Weekly $STEEM Rewards Pool</h3><p>✅ Amount: 20 ~ 100 $STEEM</p><p>✅ Distributed to the top 5 gamers on the leaderboard</p></div>`;
- }
+  if(!status||!body)return;
+  status.hidden=false;
+  status.textContent='Loading leaderboard…';
+  try{
+    const response=await fetch(`${API_BASE}/api/accounts?limit=100`,{cache:'no-store'});
+    if(!response.ok)throw new Error(`LEADERBOARD_API_${response.status}`);
+    const data=await response.json();
+    if(!data?.success||!Array.isArray(data.accounts))throw new Error('LEADERBOARD_API_INVALID');
+    const accounts=data.accounts.slice().sort((a,b)=>{
+      const ad=Number(a?.D2E)||0,bd=Number(b?.D2E)||0;
+      return bd-ad||String(a?.Username||'').localeCompare(String(b?.Username||''));
+    });
+    render(accounts);
+  }catch(error){
+    console.error('Leaderboard load failed:',error);
+    status.hidden=false;
+    status.textContent='Unable to load leaderboard. Please refresh the page.';
+    body.innerHTML='';
+  }
 }
 
-if(root) loadLeaderboard();
+loadLeaderboard();
