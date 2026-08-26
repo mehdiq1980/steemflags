@@ -3,7 +3,7 @@ const shuffle=items=>[...items].sort(()=>Math.random()-.5);
 const SAVE_PREFIX='steemflagsGameState_';
 const userKey=()=>{try{const s=JSON.parse(localStorage.getItem('steemFlagsAuthSession')||'null');return s?.username||localStorage.getItem('steemflags.username')||null}catch{return localStorage.getItem('steemflags.username')||null}};
 export class FlagGame{
- constructor(onUpdate,totalQuestions=20){this.onUpdate=onUpdate;this.totalQuestions=totalQuestions;this.reset()}
+ constructor(onUpdate,totalQuestions=20){this.onUpdate=onUpdate;this.totalQuestions=totalQuestions;this.reset();window.__steemFlagsGame=this}
  reset(){this.questionNumber=0;this.score=0;this.current=null;this.used=new Set();this.answered=false;this.completed=false}
  isComplete(){return this.completed}
  hasProgress(){return this.questionNumber>0&&!this.completed&&!!this.current}
