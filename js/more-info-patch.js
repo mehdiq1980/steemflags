@@ -1,15 +1,17 @@
 // Steem Flags More Information Patch
-// Activates the existing countryInfoLink element after an answer is selected.
+// Activates the existing countryInfoLink element.
 
-export function showMoreInformation(countryName){
-  const info=document.getElementById('countryInfoLink');
-  if(!info || !countryName) return;
+(function(){
+  function showMoreInformation(countryName){
+    const info=document.getElementById('countryInfoLink');
+    if(!info || !countryName) return;
 
-  info.hidden=false;
-  info.style.display='block';
-  info.textContent='More Information...';
-  info.href=`https://en.wikipedia.org/wiki/${encodeURIComponent(countryName)}`;
-  info.target='_blank';
-}
+    info.hidden=false;
+    info.style.display='block';
+    info.textContent='More Information...';
+    info.href=`https://en.wikipedia.org/wiki/${encodeURIComponent(countryName)}`;
+    info.target='_blank';
+  }
 
-window.showMoreInformation=showMoreInformation;
+  window.showMoreInformation=showMoreInformation;
+})();
