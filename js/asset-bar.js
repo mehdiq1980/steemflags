@@ -1,13 +1,15 @@
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
-const ASSET_COMPONENT = './components/asset-bar.html?v=20260826-assetbar-03';
+const ASSET_COMPONENT = './components/asset-bar.html?v=20260826-assetbar-04';
 
+function validUsername(value) { return /^[a-z0-9.-]{3,32}$/.test(String(value || '').trim().toLowerCase()); }
 function getUsername() {
   try {
-    const stored = localStorage.getItem('steemflags.username');
-    if (stored && /^[a-z0-9.-]{3,32}$/.test(stored.trim().toLowerCase())) return stored.trim().toLowerCase();
     const raw = localStorage.getItem('steemFlagsAuthSession');
     const session = raw ? JSON.parse(raw) : null;
-    if (session?.username && /^[a-z0-9.-]{3,32}$/.test(String(session.username).toLowerCase())) return String(session.username).toLowerCase();
+    const sessionUsername = String(session?.username || '').trim().toLowerCase();
+    if (validUsername(sessionUsername)) return sessionUsername;
+    const stored = localStorage.getItem('steemflags.username');
+    if (validUsername(stored)) return stored.trim().toLowerCase();
   } catch {}
   return null;
 }
@@ -48,7 +50,7 @@ export async function loadAssetBar() {
 export async function refreshAssetBar(username = getUsername()) {
   const assets = document.getElementById('assetStats');
   if (!assets) return null;
-  if (!username) { assets.hidden = true; return null; }
+  if (!username || !validUsername(username)) { assets.hidden = true; return null; }
   try {
     const account = await fetchAccount(username);
     const energy = Math.max(0, Math.floor(Number(account.Energy) || 0));
@@ -65,10 +67,11 @@ export async function refreshAssetBar(username = getUsername()) {
       avatar.src = `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;
       avatar.alt = `@${username} avatar`;
       avatar.hidden = false;
-      avatar.onerror = () => { avatar.hidden = true; };
+      avatar.onerror = () => { avatar.onerror = null; avatar.hidden = true; };
     }
     assets.hidden = false;
     assets.dataset.validated = 'true';
+    assets.dataset.username = username;
     return { username, Energy: energy, D2E: d2e, STEEM: steem };
   } catch (error) {
     console.warn('Asset bar validation failed', error);
