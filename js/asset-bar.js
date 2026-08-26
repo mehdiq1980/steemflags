@@ -37,9 +37,11 @@ async function fetchSteemBalance(username) {
 export async function loadAssetBar() {
   const mount = document.getElementById('assetBarMount');
   if (!mount) return null;
-  const response = await fetch(ASSET_COMPONENT, { cache: 'no-store' });
-  if (!response.ok) throw new Error(`ASSET_BAR_${response.status}`);
-  mount.innerHTML = await response.text();
+  if (!mount.innerHTML.trim()) {
+    const response = await fetch(ASSET_COMPONENT, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`ASSET_BAR_${response.status}`);
+    mount.innerHTML = await response.text();
+  }
   return refreshAssetBar();
 }
 
@@ -74,3 +76,12 @@ export async function refreshAssetBar(username = getUsername()) {
     return null;
   }
 }
+
+const observer = new MutationObserver(() => {
+  const mount = document.getElementById('assetBarMount');
+  if (!mount || mount.dataset.assetInitialized === 'true') return;
+  mount.dataset.assetInitialized = 'true';
+  loadAssetBar().catch(error => { console.warn('Shared asset bar initialization failed', error); mount.dataset.assetInitialized = 'false'; });
+});
+observer.observe(document.documentElement, { childList: true, subtree: true });
+if (document.getElementById('assetBarMount')) loadAssetBar().catch(console.warn);
