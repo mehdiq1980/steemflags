@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const LOGO = 'https://raw.githubusercontent.com/mehdiq1980/steemflags/275937b489fd47e79ec71d509dae12ca8dc772e6/assets/steemflags_logo.png';
+  const LOGO = './assets/steemflags_logo.png';
 
   function ensurePreloader() {
     let preloader = document.getElementById('sf-preloader');
@@ -10,7 +10,7 @@
     preloader.id = 'sf-preloader';
     preloader.setAttribute('role', 'status');
     preloader.setAttribute('aria-label', 'Loading Steem Flags');
-    preloader.innerHTML = '<div class="sf-loader-inner"><div class="sf-loader-logo" aria-hidden="true"><img class="sf-loader-logo-base" src="' + LOGO + '" alt="Steem Flags official logo" decoding="async"></div><svg class="sf-loader-ring" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="sfRingGradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fff"/><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#fff"/></linearGradient></defs><circle class="sf-loader-ring-track" cx="50" cy="50" r="46" pathLength="100"></circle><circle class="sf-loader-ring-progress" cx="50" cy="50" r="46" pathLength="100"></circle></svg></div>';
+    preloader.innerHTML = '<div class="sf-loader-inner"><div class="sf-loader-logo" aria-hidden="true"><img class="sf-loader-logo-base" src="' + LOGO + '" alt="Steem Flags official logo" decoding="async" fetchpriority="high"></div><svg class="sf-loader-ring" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="sfRingGradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fff"/><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#fff"/></linearGradient></defs><circle class="sf-loader-ring-track" cx="50" cy="50" r="46" pathLength="100"></circle><circle class="sf-loader-ring-progress" cx="50" cy="50" r="46" pathLength="100"></circle></svg></div>';
     document.body.insertBefore(preloader, document.body.firstChild);
     return preloader;
   }
