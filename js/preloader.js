@@ -5,13 +5,24 @@
 
   function ensurePreloader() {
     let preloader = document.getElementById('sf-preloader');
-    if (preloader) return preloader;
-    preloader = document.createElement('div');
-    preloader.id = 'sf-preloader';
-    preloader.setAttribute('role', 'status');
-    preloader.setAttribute('aria-label', 'Loading Steem Flags');
-    preloader.innerHTML = '<div class="sf-loader-inner"><div class="sf-loader-logo" aria-hidden="true"><img class="sf-loader-logo-base" src="' + LOGO + '" alt="Steem Flags official logo" decoding="async" fetchpriority="high"></div><svg class="sf-loader-ring" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="sfRingGradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fff"/><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#fff"/></linearGradient></defs><circle class="sf-loader-ring-track" cx="50" cy="50" r="46" pathLength="100"></circle><circle class="sf-loader-ring-progress" cx="50" cy="50" r="46" pathLength="100"></circle></svg></div>';
-    document.body.insertBefore(preloader, document.body.firstChild);
+    if (!preloader) {
+      preloader = document.createElement('div');
+      preloader.id = 'sf-preloader';
+      preloader.setAttribute('role', 'status');
+      preloader.setAttribute('aria-label', 'Loading Steem Flags');
+      preloader.innerHTML = '<div class="sf-loader-inner"><div class="sf-loader-logo" aria-hidden="true"><img class="sf-loader-logo-base" src="' + LOGO + '" alt="Steem Flags official logo" decoding="async" fetchpriority="high"></div><svg class="sf-loader-ring" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="sfRingGradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fff"/><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#fff"/></linearGradient></defs><circle class="sf-loader-ring-track" cx="50" cy="50" r="46" pathLength="100"></circle><circle class="sf-loader-ring-progress" cx="50" cy="50" r="46" pathLength="100"></circle></svg></div>';
+      document.body.insertBefore(preloader, document.body.firstChild);
+    }
+
+    // The preloader markup also exists in index.html. Always normalize its logo
+    // source here so an old cached HTML file cannot point to a stale Git commit.
+    const logo = preloader.querySelector('.sf-loader-logo-base');
+    if (logo) {
+      logo.src = LOGO;
+      logo.setAttribute('fetchpriority', 'high');
+      logo.loading = 'eager';
+      logo.decoding = 'async';
+    }
     return preloader;
   }
 
