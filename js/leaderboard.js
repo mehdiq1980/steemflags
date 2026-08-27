@@ -1,14 +1,17 @@
 const API_BASE='https://steemflags.mehdiq.workers.dev';
+const REWARD_POOL_URL='./data/leaderboard.json?v=20260828-reward-pool-01';
 
 const status=document.getElementById('leaderboardStatus');
 const body=document.getElementById('leaderboardBody');
+const poolValue=document.getElementById('rewardPoolValue');
 
-function avatarUrl(username){
-  return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;
-}
+function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;}
+function escapeHtml(value){return String(value).replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
 
-function escapeHtml(value){
-  return String(value).replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
+function renderPool(pool){
+  if(!poolValue)return;
+  const balance=Number(pool?.balance);
+  poolValue.textContent=Number.isFinite(balance)?`${balance.toFixed(3)} STEEM`:'— STEEM';
 }
 
 function render(accounts){
@@ -24,10 +27,24 @@ function render(accounts){
   if(status)status.hidden=true;
 }
 
+async function loadRewardPool(){
+  try{
+    const response=await fetch(REWARD_POOL_URL,{cache:'no-store'});
+    if(!response.ok)throw new Error(`REWARD_POOL_${response.status}`);
+    const data=await response.json();
+    if(!data?.reward_pool)throw new Error('REWARD_POOL_MISSING');
+    renderPool(data.reward_pool);
+  }catch(error){
+    console.error('Reward pool load failed:',error);
+    if(poolValue)poolValue.textContent='— STEEM';
+  }
+}
+
 async function loadLeaderboard(){
   if(!status||!body)return;
   status.hidden=false;
   status.textContent='Loading leaderboard…';
+  await loadRewardPool();
   try{
     const response=await fetch(`${API_BASE}/api/accounts?limit=100`,{cache:'no-store'});
     if(!response.ok)throw new Error(`LEADERBOARD_API_${response.status}`);
