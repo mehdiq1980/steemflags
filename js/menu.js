@@ -2,20 +2,28 @@ export async function loadMenu(){
     const container = document.getElementById("menuContainer");
     if(!container) return;
 
-    const response = await fetch("./components/menu.html?v=20260826-menu-position-03", { cache:"no-store" });
+    const response = await fetch("./components/menu.html?v=20260828-menu-logout-01", { cache:"no-store" });
+    if(!response.ok) throw new Error(`Unable to load menu: ${response.status}`);
     container.innerHTML = await response.text();
 
     const menuButton = document.getElementById("menuButton");
     const menu = document.getElementById("menu");
     if(!menuButton || !menu) return;
 
+    const logoutLink = menu.querySelector('[data-action="logout"]');
+    if(logoutLink){
+        try{
+            const session = JSON.parse(localStorage.getItem("steemFlagsAuthSession") || "null");
+            logoutLink.hidden = !(session && session.username);
+        }catch{
+            logoutLink.hidden = true;
+        }
+    }
+
     function positionElements(){
         const rtl = document.documentElement.dir === "rtl";
         const edge = "max(12px, 4vw)";
 
-        // The hamburger button and the opened menu must share the same side.
-        // Use inline !important so no inherited direction/flex rule can move
-        // the button independently of the menu.
         menuButton.style.setProperty("position", "absolute", "important");
         menuButton.style.setProperty("left", rtl ? "auto" : edge, "important");
         menuButton.style.setProperty("right", rtl ? edge : "auto", "important");
@@ -46,20 +54,31 @@ export async function loadMenu(){
         const actionLink = event.target.closest("[data-action]");
         if(!actionLink) return;
         const action = actionLink.dataset.action;
+
         if(action === "new-game"){
             event.preventDefault();
             window.dispatchEvent(new CustomEvent("steemflags:new-game"));
             closeMenu();
+            return;
         }
+
         if(action === "resume-game"){
             event.preventDefault();
             window.dispatchEvent(new CustomEvent("steemflags:resume-game"));
             closeMenu();
+            return;
         }
+
         if(action === "logout"){
             event.preventDefault();
-            window.dispatchEvent(new CustomEvent("steemflags:logout"));
+            try{
+                localStorage.removeItem("steemFlagsAuthSession");
+                localStorage.removeItem("steemFlagsPendingRewards");
+                sessionStorage.removeItem("steemFlagsSponsorContext");
+            }catch{}
             closeMenu();
+            window.dispatchEvent(new CustomEvent("steemflags:logout"));
+            window.location.replace("./index.html");
         }
     });
 
