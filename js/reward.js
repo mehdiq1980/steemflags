@@ -1,6 +1,6 @@
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
 
-export async function saveGameResult({username, score, eventId}) {
+export async function saveGameResult({username, score, perfect=false, eventId}) {
   const account = String(username ?? '').trim().toLowerCase();
   const amount = Number(score);
   const id = String(eventId ?? '').trim();
@@ -11,7 +11,7 @@ export async function saveGameResult({username, score, eventId}) {
     const response = await fetch(`${API_BASE}/api/game/result`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: account, score: amount, eventId: id }),
+      body: JSON.stringify({ username: account, score: amount, perfect: perfect === true, eventId: id }),
       cache: 'no-store'
     });
     const data = await response.json();
