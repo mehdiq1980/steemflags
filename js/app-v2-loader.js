@@ -1,12 +1,11 @@
 const app=document.getElementById('app');
 async function startSteemFlags(){
   try{
-    const version='20260828-stable-01';
     const ready=new Promise(resolve=>window.addEventListener('steemflags:ready',resolve,{once:true}));
-    await import(`./app-v2.js?v=${version}`);
+    await import('./app-v2.js?v=20260828-stable-02');
     await ready;
-    await import('./asset-bar.js?v=20260826-assetbar-05');
-    await import('./leaderboard.js?v=20260828-rewardpool-08');
+    await import('./asset-bar.js?v=20260826-assetbar-06');
+    await import('./leaderboard.js?v=20260828-rewardpool-09');
   }catch(error){
     console.error('Steem Flags module load failed:',error);
     if(app){
