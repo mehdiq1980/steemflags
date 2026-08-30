@@ -11,17 +11,20 @@
     try{names=new Intl.DisplayNames([lang],{type:'region'});}catch{return;}
 
     translating=true;
-    document.querySelectorAll('.answer').forEach(button=>{
-      const canonical=button.dataset.canonical||button.textContent.trim();
-      const option=game.current.options.find(item=>item[0]===canonical);
-      if(!option)return;
-      const code=option[2];
-      if(!code)return;
-      const translated=names.of(String(code).toUpperCase());
-      if(translated)button.textContent=translated;
-      button.dataset.canonical=option[0];
-    });
-    translating=false;
+    try{
+      document.querySelectorAll('.answer').forEach(button=>{
+        const canonical=button.dataset.canonical||button.textContent.trim();
+        const option=game.current.options.find(item=>item[0]===canonical);
+        if(!option)return;
+        const code=option[2];
+        if(!code)return;
+        const translated=names.of(String(code).toUpperCase());
+        if(translated && button.textContent!==translated) button.textContent=translated;
+        button.dataset.canonical=option[0];
+      });
+    }finally{
+      translating=false;
+    }
   }
 
   window.addEventListener('languagechange',translateAnswerButtons);
