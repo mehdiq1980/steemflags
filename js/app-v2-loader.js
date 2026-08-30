@@ -2,7 +2,7 @@ const app=document.getElementById('app');
 async function startSteemFlags(){
   try{
     const ready=new Promise(resolve=>window.addEventListener('steemflags:ready',resolve,{once:true}));
-    await import('./app-v2.js?v=20260828-stable-02');
+    await import('./app-v2.js?v=20260831-langfix-03');
     await ready;
     await import('./wikipedia-flags.js?v=20260828-flags-01');
     await import('./asset-bar.js?v=20260826-assetbar-06');
