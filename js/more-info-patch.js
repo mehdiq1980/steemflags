@@ -8,9 +8,8 @@
 
     info.hidden=false;
     info.style.removeProperty('display');
-    info.style.removeProperty('display');
-    info.textContent='More Information...';
-    info.href=`https://en.wikipedia.org/wiki/${encodeURIComponent(countryName)}`;
+    info.textContent='ℹ️ More Information about this country';
+    info.href=`https://en.wikipedia.org/wiki/${encodeURIComponent(countryName.replace(/\s+/g,'_'))}`;
     info.target='_blank';
     info.removeAttribute('aria-hidden');
     info.removeAttribute('tabindex');
