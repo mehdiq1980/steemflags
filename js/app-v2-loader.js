@@ -2,9 +2,9 @@ const app=document.getElementById('app');
 async function startSteemFlags(){
   try{
     const ready=new Promise(resolve=>window.addEventListener('steemflags:ready',resolve,{once:true}));
-    await import('./app-v2.js?v=20260831-langfix-04');
+    await import('./app-v2.js?v=20260831-langfix-05');
     await ready;
-    await import('./game-start-fix.js?v=20260831-startfix-01');
+    await import('./new-game-fix.js?v=20260831-newgame-02');
     await import('./wikipedia-flags.js?v=20260828-flags-01');
     await import('./asset-bar.js?v=20260826-assetbar-06');
     await import('./leaderboard.js?v=20260828-rewardpool-09');
