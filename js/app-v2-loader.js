@@ -1,10 +1,10 @@
 const app=document.getElementById('app');
 async function startSteemFlags(){
   try{
-    await import('./app-v2.js?v=20260831-mainfix-01');
+    await import('./app-v2.js?v=20260831-mainfix-03');
     await import('./wikipedia-flags.js?v=20260828-flags-01');
     await import('./asset-bar.js?v=20260826-assetbar-06');
-    await import('./leaderboard.js?v=20260828-rewardpool-09');
+    await import('./leaderboard.js?v=20260831-leaderboard-01');
   }catch(error){
     console.error('Steem Flags module load failed:',error);
     if(app){
