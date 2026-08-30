@@ -1,21 +1,62 @@
-const API_BASE='https://steemflags.mehdiq.workers.dev';
+const LEADERBOARD_URL='./data/leaderboard.json';
+
 function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;}
 function escapeHtml(value){return String(value).replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
+
+async function readLeaderboard(){
+  const response=await fetch(`${LEADERBOARD_URL}?v=${Date.now()}`,{method:'GET',cache:'no-store'});
+  const text=await response.text();
+  let data=null;
+  try{data=JSON.parse(text)}catch{}
+  if(!response.ok)throw Error(`LEADERBOARD_${response.status}`);
+
+  // Current GitHub-only format: data.players.{username}.sf
+  if(data&&data.players&&typeof data.players==='object'){
+    return Object.entries(data.players).map(([username,player])=>({
+      Username:username,
+      D2E:Number(player?.sf)||0
+    }));
+  }
+
+  // Backward-compatible format if leaderboard.json is ever changed to an accounts array.
+  if(Array.isArray(data?.accounts))return data.accounts;
+  if(Array.isArray(data?.players))return data.players;
+  throw Error('LEADERBOARD_API_INVALID');
+}
+
 function loadLeaderboard(){
   const status=document.getElementById('leaderboardStatus');
   const body=document.getElementById('leaderboardBody');
   if(!status||!body)return false;
-  status.hidden=false;status.textContent='Loading leaderboard…';
-  fetch(`${API_BASE}/api/leaderboard?limit=100`,{method:'GET',cache:'no-store'})
-    .then(async r=>{const text=await r.text();let d=null;try{d=JSON.parse(text)}catch{}if(!r.ok)throw Error(d?.error||`LEADERBOARD_API_${r.status}`);if(!d?.success||!Array.isArray(d.accounts))throw Error('LEADERBOARD_API_INVALID');return d.accounts})
+  status.hidden=false;
+  status.textContent='Loading leaderboard…';
+
+  readLeaderboard()
     .then(accounts=>{
-      accounts.sort((a,b)=>(Number(b?.D2E)||0)-(Number(a?.D2E)||0)||String(a?.Username||'').localeCompare(String(b?.Username||'')));
-      body.innerHTML=accounts.map((a,i)=>{const u=String(a?.Username||a?.username||'—');const d=Math.max(0,Number(a?.D2E??a?.d2e)||0);const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);return `<tr><td>${medal}</td><td><div class="leaderboardUser"><img class="leaderboardAvatar" src="${avatarUrl(u)}" alt="@${escapeHtml(u)}" loading="lazy" onerror="this.style.visibility='hidden'"><span>@${escapeHtml(u)}</span></div></td><td>${d.toLocaleString()}</td></tr>`}).join('')||'<tr><td colspan="3" class="muted">No players yet.</td></tr>';
+      accounts.sort((a,b)=>(Number(b?.D2E??b?.d2e??b?.sf)||0)-(Number(a?.D2E??a?.d2e??a?.sf)||0)||String(a?.Username||a?.username||'').localeCompare(String(b?.Username||b?.username||'')));
+      body.innerHTML=accounts.map((a,i)=>{
+        const u=String(a?.Username||a?.username||'—');
+        const d=Math.max(0,Number(a?.D2E??a?.d2e??a?.sf)||0);
+        const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);
+        return `<tr><td>${medal}</td><td><div class="leaderboardUser"><img class="leaderboardAvatar" src="${avatarUrl(u)}" alt="@${escapeHtml(u)}" loading="lazy" onerror="this.style.visibility='hidden'"><span>@${escapeHtml(u)}</span></div></td><td>${d.toLocaleString()}</td></tr>`;
+      }).join('')||'<tr><td colspan="3" class="muted">No players yet.</td></tr>';
       status.hidden=true;
     })
-    .catch(e=>{console.error('Leaderboard load failed:',e);status.hidden=false;status.textContent='Unable to load leaderboard. Please refresh the page.';body.innerHTML='';});
+    .catch(e=>{
+      console.error('Leaderboard load failed:',e);
+      status.hidden=false;
+      status.textContent='Unable to load leaderboard. Please refresh the page.';
+      body.innerHTML='';
+    });
   return true;
 }
-function initLeaderboard(){if(loadLeaderboard())return;let n=0;const t=setInterval(()=>{if(loadLeaderboard()||++n>=40)clearInterval(t)},250)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initLeaderboard,{once:true});else initLeaderboard();
+
+function initLeaderboard(){
+  if(loadLeaderboard())return;
+  let n=0;
+  const t=setInterval(()=>{if(loadLeaderboard()||++n>=40)clearInterval(t)},250)
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initLeaderboard,{once:true});
+else initLeaderboard();
 window.addEventListener('steemflags:ready',initLeaderboard,{once:true});
