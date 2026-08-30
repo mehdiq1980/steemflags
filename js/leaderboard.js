@@ -1,10 +1,12 @@
-const LEADERBOARD_URL='https://raw.githubusercontent.com/mehdiq1980/steemflags/main/data/leaderboard.json';
+const LEADERBOARD_URL='../data/leaderboard.json';
 
 function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;}
 function escapeHtml(value){return String(value).replace(/[&<>\\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
 
 async function readLeaderboard(){
-  const response=await fetch(`${LEADERBOARD_URL}?v=${Date.now()}`,{method:'GET',cache:'no-store',mode:'cors'});
+  // leaderboard.js lives in /js, so ../data points to the repository's /data directory.
+  // Keep the request same-origin so GitHub Pages does not depend on raw.githubusercontent.com CORS.
+  const response=await fetch(`${LEADERBOARD_URL}?v=${Date.now()}`,{method:'GET',cache:'no-store'});
   if(!response.ok)throw Error(`LEADERBOARD_${response.status}`);
   const data=await response.json();
 
