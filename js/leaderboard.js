@@ -1,12 +1,14 @@
-const LEADERBOARD_URL='../data/leaderboard.json';
+const LEADERBOARD_URL='./data/leaderboard.json';
 
 function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;}
 function escapeHtml(value){return String(value).replace(/[&<>\\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
 
 async function readLeaderboard(){
-  // leaderboard.js lives in /js, so ../data points to the repository's /data directory.
-  // Keep the request same-origin so GitHub Pages does not depend on raw.githubusercontent.com CORS.
-  const response=await fetch(`${LEADERBOARD_URL}?v=${Date.now()}`,{method:'GET',cache:'no-store'});
+  // leaderboard.json is served from the repository's /data directory on GitHub Pages.
+  // Use an absolute path derived from the current site so this also works from nested pages.
+  const base=new URL('./',window.location.href);
+  const siteRoot=base.pathname.endsWith('/steemflags/')?base.pathname:'/steemflags/';
+  const response=await fetch(`${siteRoot}data/leaderboard.json?v=${Date.now()}`,{method:'GET',cache:'no-store'});
   if(!response.ok)throw Error(`LEADERBOARD_${response.status}`);
   const data=await response.json();
 
