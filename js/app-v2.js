@@ -1,4 +1,3 @@
-import './leaderboard.js';
 import { FlagGame } from './game.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
 import { verifyPostingKey } from './steem-auth.js';
