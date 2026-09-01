@@ -1,10 +1,12 @@
 const API_BASE='https://steemflags.mehdiq.workers.dev';
 
 function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;}
-function escapeHtml(value){return String(value).replace(/[&<>\\'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function escapeHtml(value){return String(value).replace(/[&<>\\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
 
 async function readLeaderboard(){
-  const url=`${API_BASE}/api/leaderboard?_=${Date.now()}`;
+  // The Worker exposes the leaderboard data at /api/accounts.
+  // /api/leaderboard does not exist and returns {success:false,error:"Not found"}.
+  const url=`${API_BASE}/api/accounts?limit=500&_=${Date.now()}`;
   let response;
   try{
     response=await fetch(url,{method:'GET',cache:'no-store',headers:{Accept:'application/json','Cache-Control':'no-cache'}});
