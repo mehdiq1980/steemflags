@@ -4,9 +4,8 @@ function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComp
 function escapeHtml(value){return String(value).replace(/[&<>\\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
 
 async function readLeaderboard(){
-  // The Worker exposes the leaderboard data at /api/accounts.
-  // /api/leaderboard does not exist and returns {success:false,error:"Not found"}.
-  const url=`${API_BASE}/api/accounts?limit=500&_=${Date.now()}`;
+  // The Worker exposes leaderboard data at /api/leaderboard.
+  const url=`${API_BASE}/api/leaderboard?_=${Date.now()}`;
   let response;
   try{
     response=await fetch(url,{method:'GET',cache:'no-store',headers:{Accept:'application/json','Cache-Control':'no-cache'}});
@@ -17,10 +16,7 @@ async function readLeaderboard(){
   if(!response.ok||!data?.success||!Array.isArray(data.accounts)){
     throw Error(`LEADERBOARD_${response.status}_${data?.error||'INVALID_DATA'}`);
   }
-  return data.accounts.map(a=>({
-    Username:a.Username??a.username??'',
-    D2E:Number(a.D2E)||0
-  })).filter(a=>a.Username);
+  return data.accounts.map(a=>({Username:a.Username??a.username??'',D2E:Number(a.D2E)||0})).filter(a=>a.Username);
 }
 
 function renderLeaderboard(accounts){
