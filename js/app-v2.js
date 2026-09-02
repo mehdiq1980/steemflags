@@ -4,7 +4,7 @@ import { verifyPostingKey } from './steem-auth.js';
 import { saveGameResult } from './reward.js';
 import { loadMenu } from './menu.js';
 
-const API_BASE='https://steemflags.mehdiq.com';
+const API_BASE='https://steemflags.mehdiq.workers.dev';
 const SESSION_KEY='steemFlagsAuthSession';
 const REWARD_STATE_KEY='steemFlagsPendingRewards';
 const $=id=>document.getElementById(id);
