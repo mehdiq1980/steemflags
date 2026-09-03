@@ -1,5 +1,6 @@
 const API_BASE = 'https://steemflags.mehdiq.workers.dev';
 const ASSET_COMPONENT = './components/asset-bar.html?v=20260826-assetbar-04';
+let refreshSerial = 0;
 
 function validUsername(value) { return /^[a-z0-9.-]{3,32}$/.test(String(value || '').trim().toLowerCase()); }
 function getUsername() {
@@ -50,18 +51,20 @@ export async function loadAssetBar() {
 export async function refreshAssetBar(username = getUsername()) {
   const assets = document.getElementById('assetStats');
   if (!assets) return null;
+  const serial = ++refreshSerial;
   if (!username || !validUsername(username)) { assets.hidden = true; return null; }
   try {
     const account = await fetchAccount(username);
     const energy = Math.max(0, Math.floor(Number(account.Energy) || 0));
     const d2e = Math.max(0, Math.floor(Number(account.D2E) || 0));
+    const steem = await fetchSteemBalance(username);
+    if (serial !== refreshSerial) return null;
     const energyEl = document.getElementById('energyValue');
     const d2eEl = document.getElementById('sfValue');
     const steemEl = document.getElementById('steemValue');
     const avatar = document.getElementById('userAvatar');
     if (energyEl) energyEl.textContent = String(energy);
     if (d2eEl) d2eEl.textContent = String(d2e);
-    const steem = await fetchSteemBalance(username);
     if (steemEl) steemEl.textContent = steem === null ? '—' : String(steem);
     if (avatar) {
       avatar.src = `https://steemitimages.com/u/${encodeURIComponent(username)}/avatar`;
@@ -74,11 +77,18 @@ export async function refreshAssetBar(username = getUsername()) {
     assets.dataset.username = username;
     return { username, Energy: energy, D2E: d2e, STEEM: steem };
   } catch (error) {
-    console.warn('Asset bar validation failed', error);
-    assets.dataset.validated = 'false';
+    if (serial === refreshSerial) {
+      console.warn('Asset bar validation failed', error);
+      assets.dataset.validated = 'false';
+    }
     return null;
   }
 }
+
+window.addEventListener('steemflags:account-updated', event => {
+  const username = String(event?.detail?.username || getUsername()).trim().toLowerCase();
+  if (validUsername(username)) void refreshAssetBar(username);
+});
 
 const observer = new MutationObserver(() => {
   const mount = document.getElementById('assetBarMount');
