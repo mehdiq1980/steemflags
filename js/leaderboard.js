@@ -4,7 +4,7 @@ function avatarUrl(username){return `https://steemitimages.com/u/${encodeURIComp
 function escapeHtml(value){return String(value).replace(/[&<>\\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
 
 async function readLeaderboard(){
-  const url=`${API_BASE}/api/leaderboard?limit=100&_=${Date.now()}`;
+  const url=`${API_BASE}/api/accounts?limit=100&_=${Date.now()}`;
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),10000);
   try{
