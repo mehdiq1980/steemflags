@@ -1,16 +1,46 @@
-import { applyLanguage, getLanguage, setLanguage } from './i18n.js';
+import { applyLanguage, getLanguage, setLanguage, t } from './i18n.js';
+
+const STATIC_TRANSLATIONS={
+ en:{signup:'Don\'t have a Steem account?',create:'Create one for free now.',leaderboard:'Steem Flags Leaderboard',pool:'Weekly $STEEM Rewards Pool',amount:'Amount: 20 ~ 100 $STEEM',top5:'Distributed to the top 5 gamers on the leaderboard',coming:'⚠️ Coming Soon',flag:'Country flag'},
+ fa:{signup:'حساب Steem ندارید؟',create:'همین حالا رایگان ایجاد کنید.',leaderboard:'لیدربورد Steem Flags',pool:'استخر هفتگی پاداش $STEEM',amount:'مقدار: ۲۰ ~ ۱۰۰ $STEEM',top5:'بین ۵ بازیکن برتر لیدربورد توزیع می‌شود',coming:'⚠️ به‌زودی',flag:'پرچم کشور'},
+ es:{signup:'¿No tienes una cuenta de Steem?',create:'Crea una gratis ahora.',leaderboard:'Clasificación de Steem Flags',pool:'Fondo semanal de recompensas de $STEEM',amount:'Cantidad: 20 ~ 100 $STEEM',top5:'Distribuido entre los 5 mejores jugadores de la clasificación',coming:'⚠️ Próximamente',flag:'Bandera del país'},
+ ur:{signup:'Steem اکاؤنٹ نہیں ہے؟',create:'ابھی مفت اکاؤنٹ بنائیں۔',leaderboard:'Steem Flags لیڈر بورڈ',pool:'ہفتہ وار $STEEM انعامی پول',amount:'رقم: 20 ~ 100 $STEEM',top5:'لیڈر بورڈ کے ٹاپ 5 کھلاڑیوں میں تقسیم کیا جائے گا',coming:'⚠️ جلد آرہا ہے',flag:'ملک کا جھنڈا'},
+ hi:{signup:'Steem खाता नहीं है?',create:'अभी मुफ़्त में बनाएँ।',leaderboard:'Steem Flags लीडरबोर्ड',pool:'साप्ताहिक $STEEM पुरस्कार पूल',amount:'राशि: 20 ~ 100 $STEEM',top5:'लीडरबोर्ड के शीर्ष 5 खिलाड़ियों में वितरित किया जाएगा',coming:'⚠️ जल्द आ रहा है',flag:'देश का झंडा'},
+ bn:{signup:'আপনার Steem অ্যাকাউন্ট নেই?',create:'এখনই বিনামূল্যে তৈরি করুন।',leaderboard:'Steem Flags লিডারবোর্ড',pool:'সাপ্তাহিক $STEEM পুরস্কার পুল',amount:'পরিমাণ: 20 ~ 100 $STEEM',top5:'লিডারবোর্ডের শীর্ষ ৫ খেলোয়াড়ের মধ্যে বিতরণ করা হবে',coming:'⚠️ শীঘ্রই আসছে',flag:'দেশের পতাকা'},
+ zh:{signup:'还没有 Steem 账户？',create:'立即免费创建。',leaderboard:'Steem Flags 排行榜',pool:'每周 $STEEM 奖励池',amount:'金额：20 ~ 100 $STEEM',top5:'分配给排行榜前 5 名玩家',coming:'⚠️ 即将推出',flag:'国家旗帜'},
+ ko:{signup:'Steem 계정이 없으신가요?',create:'지금 무료로 만드세요.',leaderboard:'Steem Flags 리더보드',pool:'주간 $STEEM 보상 풀',amount:'금액: 20 ~ 100 $STEEM',top5:'리더보드 상위 5명의 플레이어에게 분배됩니다',coming:'⚠️ 곧 제공됩니다',flag:'국가 국기'}
+};
+
+function translateSharedPage(lang){
+ const s=STATIC_TRANSLATIONS[lang]||STATIC_TRANSLATIONS.en;
+ const set=(selector,value,html=false)=>document.querySelectorAll(selector).forEach(el=>html?el.innerHTML=value:el.textContent=value);
+ set('.homeTitle,.loginGameTitle',t('welcome',lang).replace(/ & /,'<br> & '),true);
+ set('.steemSignupLink span:first-child',s.signup);
+ set('.steemSignupLink span:last-child',s.create);
+ set('.leaderboardTitle h2',t('leaderboardTitle',lang));
+ set('.rewardPoolHeading',s.pool);
+ const lines=document.querySelectorAll('.rewardPoolLine');
+ if(lines[0])lines[0].innerHTML='<span class="rewardPoolEmoji">✅</span> '+s.amount;
+ if(lines[1])lines[1].innerHTML='<span class="rewardPoolEmoji">✅</span> '+s.top5;
+ set('.rewardPoolComingSoon',s.coming);
+ document.querySelectorAll('.flag').forEach(el=>el.setAttribute('aria-label',s.flag));
+ const leaderboard=document.getElementById('leaderboardSection');
+ if(leaderboard)leaderboard.setAttribute('aria-label','🏆 '+s.leaderboard);
+}
+
 export async function loadMenu(){
  const container=document.getElementById("menuContainer");if(!container)return;
- const response=await fetch("./components/menu.html?v=20260903-i18n-all-01",{cache:"no-store"});if(!response.ok)throw new Error(`Unable to load menu: ${response.status}`);container.innerHTML=await response.text();
+ const response=await fetch("./components/menu.html?v=20260903-i18n-all-02",{cache:"no-store"});if(!response.ok)throw new Error(`Unable to load menu: ${response.status}`);container.innerHTML=await response.text();
  const menuButton=document.getElementById("menuButton"),menu=document.getElementById("menu");if(!menuButton||!menu)return;
  const logoutLink=menu.querySelector('[data-action="logout"]');
  if(logoutLink){let loggedIn=false;try{const session=JSON.parse(localStorage.getItem("steemFlagsAuthSession")||"null");const legacy=localStorage.getItem("steemflags.username");loggedIn=!!(session?.username||legacy)}catch{}logoutLink.hidden=!loggedIn}
  function positionElements(){const rtl=document.documentElement.dir==="rtl",edge="max(12px, 4vw)";menuButton.style.setProperty("position","absolute","important");menuButton.style.setProperty("left",rtl?"auto":edge,"important");menuButton.style.setProperty("right",rtl?edge:"auto","important");menuButton.style.setProperty("top","50%","important");menuButton.style.setProperty("transform","translateY(-50%)","important");menuButton.style.setProperty("z-index","110","important");menu.style.setProperty("position","fixed","important");menu.style.setProperty("left",rtl?"auto":edge,"important");menu.style.setProperty("right",rtl?edge:"auto","important")}
- positionElements();applyLanguage(menu,getLanguage());
+ function renderLanguage(lang){applyLanguage(document,lang);applyLanguage(menu,lang);translateSharedPage(lang);positionElements()}
+ positionElements();renderLanguage(getLanguage());
  const languageSelect=document.getElementById('languageSelect');
- if(languageSelect){languageSelect.value=getLanguage();languageSelect.addEventListener('change',()=>{const lang=setLanguage(languageSelect.value);applyLanguage(document,lang);applyLanguage(menu,lang);positionElements();if(location.pathname.endsWith('/index.html')||location.pathname.endsWith('/'))return;location.reload()})}
+ if(languageSelect){languageSelect.value=getLanguage();languageSelect.addEventListener('change',()=>{const lang=setLanguage(languageSelect.value);renderLanguage(lang);if(location.pathname.endsWith('/index.html')||location.pathname.endsWith('/'))return;location.reload()})}
  function closeMenu(){menu.hidden=true;menuButton.setAttribute("aria-expanded","false")}
  menuButton.onclick=e=>{e.stopPropagation();menu.hidden=!menu.hidden;menuButton.setAttribute("aria-expanded",String(!menu.hidden));if(!menu.hidden)positionElements()};
  menu.addEventListener("click",event=>{const link=event.target.closest("[data-action]");if(!link)return;const action=link.dataset.action;if(action==="new-game"){event.preventDefault();window.dispatchEvent(new CustomEvent("steemflags:new-game"));closeMenu();return}if(action==="resume-game"){event.preventDefault();window.dispatchEvent(new CustomEvent("steemflags:resume-game"));closeMenu();return}if(action==="logout"){event.preventDefault();try{localStorage.removeItem("steemFlagsAuthSession");localStorage.removeItem("steemFlagsPendingRewards");localStorage.removeItem("steemflags.username");sessionStorage.removeItem("steemFlagsSponsorContext");sessionStorage.removeItem("steemFlagsSponsorReward")}catch{}closeMenu();window.location.replace("./index.html?logout=1")}});
- document.addEventListener("click",e=>{if(!menu.hidden&&!menu.contains(e.target)&&!menuButton.contains(e.target))closeMenu()});window.addEventListener("languagechange",()=>{applyLanguage(menu,getLanguage());positionElements()});window.addEventListener("resize",positionElements);
+ document.addEventListener("click",e=>{if(!menu.hidden&&!menu.contains(e.target)&&!menuButton.contains(e.target))closeMenu()});window.addEventListener("languagechange",()=>{renderLanguage(getLanguage())});window.addEventListener("resize",positionElements);
 }
