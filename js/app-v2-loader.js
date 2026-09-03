@@ -4,7 +4,7 @@ async function startSteemFlags(){
     await import('./app-v2.js?v=20260903-finalfix-04');
     await import('./wikipedia-flags.js?v=20260828-flags-01');
     await import('./asset-bar.js?v=20260903-assetbar-reward-fix-01');
-    await import('./leaderboard.js?v=20260903-leaderboard-08');
+    await import('./leaderboard.js?v=20260903-leaderboard-09');
     await import('./reward-ui.js?v=20260903-rewardmodal-05');
   }catch(error){
     console.error('Steem Flags module load failed:',error);
