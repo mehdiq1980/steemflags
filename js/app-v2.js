@@ -4,14 +4,14 @@ import { verifyPostingKey } from './steem-auth.js';
 import { saveGameResult } from './reward.js';
 import { loadMenu } from './menu.js';
 
-const API_BASE='https://steemflags.mehdiq1980.workers.dev';
+const API_BASE='https://steemflags.mehdiq.workers.dev';
 const SESSION_KEY='steemFlagsAuthSession';
 const REWARD_STATE_KEY='steemFlagsPendingRewards';
 const $=id=>document.getElementById(id);
 async function loadComponent(){const r=await fetch('./components/app-shell.html?v=20260831-lbfix-01',{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
 async function loadAssetBar(){const m=$('assetBarMount');if(!m)return;const r=await fetch('./components/asset-bar.html?v=20260826-assetbar-03',{cache:'no-store'});if(!r.ok)throw Error(`Unable to load asset bar: ${r.status}`);m.innerHTML=await r.text()}
 async function fetchAccount(u){const r=await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(u)}`,{cache:'no-store'});if(!r.ok)throw Error(`ACCOUNT_API_${r.status}`);const d=await r.json();if(!d?.success||!d.account)throw Error('ACCOUNT_API_INVALID');return d.account}
-async function fetchSteemBalance(a){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[a]]});for(const e of ['https://api.steemit.com','https://api.steem.house','https://api.steemyy.com'])try{const r=await fetch(e,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'}),d=await r.json(),b=d?.result?.[0]?.balance;if(typeof b==='string'&&/\d/.test(b))return b.replace(/\s*STEEM\s*$/i,'').trim()}catch{}return null}
+async function fetchSteemBalance(a){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[a]]});try{const r=await fetch(`${API_BASE}/api/steem-rpc`,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)return null;const d=await r.json(),b=d?.result?.[0]?.balance;if(typeof b==='string'&&/\d/.test(b))return b.replace(/\s*STEEM\s*$/i,'').trim()}catch{}return null}
 function readSession(){try{const s=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');return s?.username||null}catch{return null}}function writeSession(u){localStorage.setItem(SESSION_KEY,JSON.stringify({username:u}))}function clearSession(){localStorage.removeItem(SESSION_KEY)}function savedKey(u){return u?`steemflagsGameState_${String(u).trim().toLowerCase()}`:null}function getSavedGame(u){try{const r=localStorage.getItem(savedKey(u));return r?JSON.parse(r):null}catch{return null}}function clearSavedGame(u){try{localStorage.removeItem(savedKey(u))}catch{}}function saveRewardState(s){try{localStorage.setItem(REWARD_STATE_KEY,JSON.stringify(s))}catch{}}function readRewardState(){try{const s=JSON.parse(localStorage.getItem(REWARD_STATE_KEY)||'null');return s?.username?s:null}catch{return null}}function clearRewardState(){try{localStorage.removeItem(REWARD_STATE_KEY)}catch{}}
 function performLogout(){try{localStorage.removeItem(SESSION_KEY);localStorage.removeItem(REWARD_STATE_KEY);sessionStorage.removeItem('steemFlagsSponsorContext');sessionStorage.removeItem('steemFlagsSponsorReward')}catch{}window.location.replace('./index.html')}
 async function bootstrap(){const a=$('app');a.innerHTML=await loadComponent();await loadAssetBar();await loadMenu();await start()}
