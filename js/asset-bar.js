@@ -89,6 +89,10 @@ window.addEventListener('steemflags:account-updated', event => {
   const username = String(event?.detail?.username || getUsername()).trim().toLowerCase();
   if (validUsername(username)) void refreshAssetBar(username);
 });
+window.addEventListener('steemflags:show-home', () => {
+  const username = getUsername();
+  if (validUsername(username)) void refreshAssetBar(username);
+});
 
 const observer = new MutationObserver(() => {
   const mount = document.getElementById('assetBarMount');
