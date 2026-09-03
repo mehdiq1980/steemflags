@@ -1,4 +1,4 @@
-const STEEM_RPCS = ['https://api.steemit.com','https://api.steemdev.com','https://api.steem.fans','https://api.steemyy.com'];
+const STEEM_RPCS = ['https://steemflags.mehdiq.workers.dev/api/steem-rpc'];
 function getDsteem(){if(!globalThis.dsteem?.PrivateKey)throw new Error('AUTH_LIBRARY_UNAVAILABLE');return globalThis.dsteem;}
 function normalizeKey(value){return String(value??'').trim().toUpperCase();}
 async function getAccount(accountName){const body=JSON.stringify({jsonrpc:'2.0',method:'condenser_api.get_accounts',params:[[accountName]],id:1});let lastError=null;for(const rpc of STEEM_RPCS){try{const response=await fetch(rpc,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!response.ok)throw new Error(`HTTP_${response.status}`);const payload=await response.json();if(payload.error)throw new Error(payload.error.message||'RPC_ERROR');const account=payload.result?.[0];if(account)return account;throw new Error('ACCOUNT_NOT_FOUND');}catch(error){lastError=error;console.warn(`Steem RPC failed: ${rpc}`,error);}}throw new Error(lastError?.message==='ACCOUNT_NOT_FOUND'?'ACCOUNT_NOT_FOUND':'STEEM_RPC_UNAVAILABLE');}
