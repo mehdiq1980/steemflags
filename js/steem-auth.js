@@ -14,6 +14,7 @@ const STEEM_RPC_ENDPOINTS = [
 const RPC_TIMEOUT_MS = 15000;
 const AUTH_TIMEOUT_MS = 40000;
 const DSTEEM_SOURCES = [
+  'https://raw.githubusercontent.com/jnordberg/dsteem/master/dist/dsteem.js',
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
   'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
 ];
