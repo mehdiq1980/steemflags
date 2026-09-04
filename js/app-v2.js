@@ -1,6 +1,6 @@
 import { FlagGame } from './game.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
-import { verifyPostingKey } from './steem-auth.js';
+import { verifyPostingKey } from './steem-auth.js?v=20260904-auth-fix-03';
 import { saveGameResult } from './reward.js';
 import { loadMenu } from './menu.js';
 
@@ -8,7 +8,6 @@ const API_BASE='https://steemflags.mehdiq.workers.dev';
 const SESSION_KEY='steemFlagsAuthSession';
 const REWARD_STATE_KEY='steemFlagsPendingRewards';
 const $=id=>document.getElementById(id);
-
 function pageUrl(path){return new URL(path,document.baseURI).href}
 async function loadComponent(){const r=await fetch(pageUrl('./components/app-shell.html?v=20260904-component-fix-05'),{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
 async function loadAssetBar(){const m=$('assetBarMount');if(!m)return;const r=await fetch(pageUrl('./components/asset-bar.html?v=20260904-component-fix-05'),{cache:'no-store'});if(!r.ok)throw Error(`Unable to load asset bar: ${r.status}`);m.innerHTML=await r.text()}
@@ -23,7 +22,6 @@ function clearSavedGame(u){try{localStorage.removeItem(savedKey(u))}catch{}}
 function saveRewardState(s){try{localStorage.setItem(REWARD_STATE_KEY,JSON.stringify(s))}catch{}}
 function performLogout(){try{localStorage.removeItem(SESSION_KEY);localStorage.removeItem(REWARD_STATE_KEY);sessionStorage.removeItem('steemFlagsSponsorContext');sessionStorage.removeItem('steemFlagsSponsorReward')}catch{}window.location.replace('./index.html')}
 async function bootstrap(){const a=$('app');a.innerHTML=await loadComponent();await loadAssetBar();await loadMenu();await start()}
-
 async function start(){
  const query=new URLSearchParams(location.search);if(query.get('logout')==='1'){performLogout();return}
  let username=null,account=null,gameScore=0,sessionCorrect=0;
@@ -44,7 +42,7 @@ async function start(){
  async function newGame(){if(!username){feedback.textContent=t('loginPrompt');return}if(newButton.dataset.busy==='1')return;newButton.dataset.busy='1';newButton.disabled=true;newButton.setAttribute('aria-busy','true');feedback.textContent='';feedback.className='feedback';const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10000);try{const r=await fetch(`${API_BASE}/api/game/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username}),cache:'no-store',signal:controller.signal});const text=await r.text();let d=null;try{d=JSON.parse(text)}catch{}if(!r.ok||!d?.success)throw Error(d?.error||`Unable to start game (${r.status})`);if(!d.account)throw Error('Game started but account data was not returned');account=d.account;gameScore=0;sessionCorrect=0;clearSavedGame(username);game.reset();applyAccount();showGame();game.next()}catch(e){feedback.textContent=e?.name==='AbortError'?'Game server did not respond. Please try again.':(e?.message||'Unable to start game.');feedback.className='feedback bad';try{account=await fetchAccount(username);applyAccount()}catch{}}finally{clearTimeout(timer);newButton.dataset.busy='0';newButton.removeAttribute('aria-busy');newButton.disabled=Number(account?.Energy)<=0}}
  async function resumeGame(){const saved=getSavedGame(username);if(!saved?.current){updateResume();return}if(!game.restore(saved)){clearSavedGame(username);updateResume();return}gameScore=Number(saved.score)||0;sessionCorrect=0;showGame();if(game.answered)game.next();else renderQuestion(game.current,game.score,game.questionNumber)}
  resumeButton.onclick=resumeGame;newButton.onclick=e=>{e.preventDefault();e.stopPropagation();newGame()};window.addEventListener('steemflags:new-game',()=>newGame());window.addEventListener('steemflags:resume-game',()=>resumeGame());
- loginForm.addEventListener('submit',async e=>{e.preventDefault();const u=usernameInput.value.trim().toLowerCase(),k=key.value.trim();loginFeedback.textContent=t('verifying');try{await verifyPostingKey(u,k);username=u;key.value='';writeSession(u);await sync();showHome()}catch(err){clearSession();username=null;loginFeedback.textContent=err.message||t('invalidPostingKey')}});
+ loginForm.addEventListener('submit',async e=>{e.preventDefault();if(loginForm.dataset.busy==='1')return;loginForm.dataset.busy='1';loginFeedback.textContent=t('verifying');const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);try{await Promise.race([verifyPostingKey(u,k),new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new Error('LOGIN_TIMEOUT')),{once:true}))]);username=u;key.value='';writeSession(u);await sync();showHome()}catch(err){clearSession();username=null;loginFeedback.textContent=err?.message==='LOGIN_TIMEOUT'?'Login verification timed out. Please try again.':(err?.message||t('invalidPostingKey'))}finally{clearTimeout(timer);loginForm.dataset.busy='0'}});
  next.onclick=()=>{if(!game.isComplete())game.next()};
  if(language){language.onchange=()=>{const lang=setLanguage(language.value);applyLanguage(document,lang);applyEnglishBrandTitles(lang);if(!gameView.hidden&&game.current)renderQuestion(game.current,game.score,game.questionNumber)}}
  const initialLanguage=getLanguage();applyLanguage(document,initialLanguage);applyEnglishBrandTitles(initialLanguage);loginView.hidden=true;home.hidden=true;leaderboard.hidden=true;gameView.hidden=true;username=readSession();if(username){try{await sync();showHome()}catch{clearSession();username=null;loginView.hidden=false}}else loginView.hidden=false
