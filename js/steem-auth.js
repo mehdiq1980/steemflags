@@ -1,13 +1,13 @@
 const STEEM_RPCS = [
-  'https://steemflags.mehdiq.workers.dev/api/steem-rpc',
   'https://api.justyy.com',
   'https://api3.justyy.com',
   'https://steemd.steemworld.org',
-  'https://api.steemyy.com'
+  'https://api.steemyy.com',
+  'https://api.steemit.com'
 ];
 
-const RPC_TIMEOUT_MS = 9000;
-const AUTH_TIMEOUT_MS = 30000;
+const RPC_TIMEOUT_MS = 5000;
+const AUTH_TIMEOUT_MS = 15000;
 const DSTEEM_SOURCES = [
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
   'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
@@ -25,10 +25,10 @@ function loadScript(src){
     }
     const script=document.createElement('script');
     script.src=src;
-    script.async=false;
-    const timer=setTimeout(()=>{script.remove();reject(new Error('AUTH_LIBRARY_TIMEOUT'))},10000);
+    script.async=true;
+    const timer=setTimeout(()=>{script.remove();reject(new Error('AUTH_LIBRARY_TIMEOUT'))},7000);
     script.onload=()=>{clearTimeout(timer);globalThis.dsteem?.PrivateKey?resolve(globalThis.dsteem):reject(new Error('AUTH_LIBRARY_INVALID'))};
-    script.onerror=()=>{clearTimeout(timer);reject(new Error('AUTH_LIBRARY_LOAD_FAILED'))};
+    script.onerror=()=>{clearTimeout(timer);script.remove();reject(new Error('AUTH_LIBRARY_LOAD_FAILED'))};
     document.head.appendChild(script);
   });
 }
@@ -36,13 +36,7 @@ function loadScript(src){
 async function getDsteem(){
   if(globalThis.dsteem?.PrivateKey)return globalThis.dsteem;
   if(!dsteemPromise){
-    dsteemPromise=(async()=>{
-      let lastError=null;
-      for(const source of DSTEEM_SOURCES){
-        try{return await loadScript(source)}catch(error){lastError=error}
-      }
-      throw new Error(`AUTH_LIBRARY_UNAVAILABLE: ${lastError?.message||'dsteem could not be loaded'}`);
-    })().catch(error=>{dsteemPromise=null;throw error});
+    dsteemPromise=Promise.any(DSTEEM_SOURCES.map(source=>loadScript(source))).catch(error=>{dsteemPromise=null;throw new Error(`AUTH_LIBRARY_UNAVAILABLE: ${error?.message||'dsteem could not be loaded'}`)});
   }
   return dsteemPromise;
 }
@@ -61,18 +55,14 @@ function rpcRequest(url,body){
       const account=payload.result?.[0];
       if(!account)throw new Error('ACCOUNT_NOT_FOUND');
       resolve(account);
-    }catch(error){
-      reject(error?.name==='AbortError'?new Error('RPC_TIMEOUT'):error);
-    }finally{clearTimeout(timer)}
+    }catch(error){reject(error?.name==='AbortError'?new Error('RPC_TIMEOUT'):error)}finally{clearTimeout(timer)}
   });
 }
 
 async function getAccount(accountName){
   const body=JSON.stringify({jsonrpc:'2.0',method:'condenser_api.get_accounts',params:[[accountName]],id:1});
   const attempts=STEEM_RPCS.map(rpc=>rpcRequest(rpc,body).catch(error=>{console.warn(`Steem RPC failed: ${rpc}`,error);throw error}));
-  try{
-    return await Promise.any(attempts);
-  }catch(errors){
+  try{return await Promise.any(attempts)}catch(errors){
     const messages=errors?.errors?.map(error=>error?.message).filter(Boolean)||[];
     if(messages.includes('ACCOUNT_NOT_FOUND'))throw new Error('ACCOUNT_NOT_FOUND');
     throw new Error('STEEM_RPC_UNAVAILABLE');
