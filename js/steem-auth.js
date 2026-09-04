@@ -1,9 +1,9 @@
 const STEEM_RPC_ENDPOINTS = [
-  'https://steemflags.mehdiq.workers.dev/api/steem-rpc',
-  'https://api.steemit.com'
+  'https://api.steemit.com',
+  'https://steemflags.mehdiq.workers.dev/api/steem-rpc'
 ];
-const RPC_TIMEOUT_MS = 12000;
-const AUTH_TIMEOUT_MS = 30000;
+const RPC_TIMEOUT_MS = 10000;
+const AUTH_TIMEOUT_MS = 25000;
 const DSTEEM_SOURCES = [
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
   'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
