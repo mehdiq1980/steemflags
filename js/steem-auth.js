@@ -1,18 +1,18 @@
 const STEEM_RPC_ENDPOINTS = [
   'https://steemflags.mehdiq.workers.dev/api/steem-rpc',
+  'https://api.steemit.com',
   'https://api.justyy.com',
   'https://api3.justyy.com',
   'https://steemd.steemworld.org',
   'https://api.steemyy.com',
   'https://api2.justyy.com',
   'https://api.steemitdev.com',
-  'https://api.steemit.com',
   'https://steem.senior.workers.dev',
   'https://steem.justyy.com',
   'https://api.steem.fans'
 ];
-const RPC_TIMEOUT_MS = 7000;
-const AUTH_TIMEOUT_MS = 25000;
+const RPC_TIMEOUT_MS = 15000;
+const AUTH_TIMEOUT_MS = 40000;
 const DSTEEM_SOURCES = [
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
   'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
@@ -49,9 +49,10 @@ async function getDsteem(){
 function normalizeKey(value){return String(value??'').trim().toUpperCase()}
 
 async function rpcRequest(body){
-  const requests=STEEM_RPC_ENDPOINTS.map(endpoint=>{
+  const requests=STEEM_RPC_ENDPOINTS.map((endpoint,index)=>{
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),RPC_TIMEOUT_MS);
+    const timeout=index===0?RPC_TIMEOUT_MS:10000;
+    const timer=setTimeout(()=>controller.abort(),timeout);
     return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal})
       .then(async response=>{
         if(!response.ok)throw new Error(`HTTP_${response.status}`);
