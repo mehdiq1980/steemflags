@@ -24,8 +24,13 @@ function loadScript(src){
     const existing=[...document.scripts].find(script=>script.src===src);
     if(existing){
       if(globalThis.dsteem?.PrivateKey)return resolve(globalThis.dsteem);
-      existing.addEventListener('load',()=>resolve(globalThis.dsteem),{once:true});
-      existing.addEventListener('error',()=>reject(new Error('AUTH_LIBRARY_LOAD_FAILED')),{once:true});
+      let settled=false;
+      const finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);existing.removeEventListener('load',onLoad);existing.removeEventListener('error',onError);fn(value)};
+      const onLoad=()=>globalThis.dsteem?.PrivateKey?finish(resolve,globalThis.dsteem):finish(reject,new Error('AUTH_LIBRARY_INVALID'));
+      const onError=()=>finish(reject,new Error('AUTH_LIBRARY_LOAD_FAILED'));
+      const timer=setTimeout(()=>finish(reject,new Error('AUTH_LIBRARY_TIMEOUT')),10000);
+      existing.addEventListener('load',onLoad,{once:true});
+      existing.addEventListener('error',onError,{once:true});
       return;
     }
     const script=document.createElement('script');
