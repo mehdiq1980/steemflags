@@ -1,6 +1,6 @@
 import { FlagGame } from './game.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
-import { verifyPostingKey } from './steem-auth.js?v=20260904-login-fix-04';
+import { verifyPostingKey } from './steem-auth.js?v=20260904-login-fix-05';
 import { saveGameResult } from './reward.js';
 import { loadMenu } from './menu.js';
 
@@ -16,7 +16,7 @@ async function fetchSteemBalance(username){const body=JSON.stringify({jsonrpc:'2
 function readSession(){try{const session=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');return session?.username||null}catch{return null}}
 function writeSession(username){localStorage.setItem(SESSION_KEY,JSON.stringify({username}))}
 function clearSession(){localStorage.removeItem(SESSION_KEY)}
-function savedKey(username){return username?`steemflagsGameState_${String(username).trim().toLowerCase()}`:null}
+function savedKey(username){return username?`steemFlagsGameState_${String(username).trim().toLowerCase()}`:null}
 function getSavedGame(username){try{const key=savedKey(username);const raw=key?localStorage.getItem(key):null;return raw?JSON.parse(raw):null}catch{return null}}
 function clearSavedGame(username){try{const key=savedKey(username);if(key)localStorage.removeItem(key)}catch{}}
 function saveRewardState(state){try{localStorage.setItem(REWARD_STATE_KEY,JSON.stringify(state))}catch{}}
