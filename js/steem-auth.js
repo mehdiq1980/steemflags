@@ -6,7 +6,8 @@ const STEEM_RPCS = [
   'https://api.steemyy.com'
 ];
 
-const RPC_TIMEOUT_MS = 5000;
+const RPC_TIMEOUT_MS = 9000;
+const AUTH_TIMEOUT_MS = 30000;
 const DSTEEM_SOURCES = [
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
   'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
@@ -15,9 +16,9 @@ let dsteemPromise = null;
 
 function loadScript(src){
   return new Promise((resolve,reject)=>{
-    const existing = [...document.scripts].find(s => s.src === src);
+    const existing=[...document.scripts].find(script=>script.src===src);
     if(existing){
-      if(globalThis.dsteem?.PrivateKey) return resolve(globalThis.dsteem);
+      if(globalThis.dsteem?.PrivateKey)return resolve(globalThis.dsteem);
       existing.addEventListener('load',()=>resolve(globalThis.dsteem),{once:true});
       existing.addEventListener('error',()=>reject(new Error('AUTH_LIBRARY_LOAD_FAILED')),{once:true});
       return;
@@ -25,20 +26,20 @@ function loadScript(src){
     const script=document.createElement('script');
     script.src=src;
     script.async=false;
-    const timer=setTimeout(()=>{script.remove();reject(new Error('AUTH_LIBRARY_TIMEOUT'))},8000);
-    script.onload=()=>{clearTimeout(timer);globalThis.dsteem?.PrivateKey ? resolve(globalThis.dsteem) : reject(new Error('AUTH_LIBRARY_INVALID'))};
+    const timer=setTimeout(()=>{script.remove();reject(new Error('AUTH_LIBRARY_TIMEOUT'))},10000);
+    script.onload=()=>{clearTimeout(timer);globalThis.dsteem?.PrivateKey?resolve(globalThis.dsteem):reject(new Error('AUTH_LIBRARY_INVALID'))};
     script.onerror=()=>{clearTimeout(timer);reject(new Error('AUTH_LIBRARY_LOAD_FAILED'))};
     document.head.appendChild(script);
   });
 }
 
 async function getDsteem(){
-  if(globalThis.dsteem?.PrivateKey) return globalThis.dsteem;
+  if(globalThis.dsteem?.PrivateKey)return globalThis.dsteem;
   if(!dsteemPromise){
     dsteemPromise=(async()=>{
       let lastError=null;
-      for(const src of DSTEEM_SOURCES){
-        try{return await loadScript(src)}catch(error){lastError=error}
+      for(const source of DSTEEM_SOURCES){
+        try{return await loadScript(source)}catch(error){lastError=error}
       }
       throw new Error(`AUTH_LIBRARY_UNAVAILABLE: ${lastError?.message||'dsteem could not be loaded'}`);
     })().catch(error=>{dsteemPromise=null;throw error});
@@ -46,84 +47,68 @@ async function getDsteem(){
   return dsteemPromise;
 }
 
-function normalizeKey(value){
-  return String(value ?? '').trim().toUpperCase();
+function normalizeKey(value){return String(value??'').trim().toUpperCase()}
+
+function rpcRequest(url,body){
+  return new Promise(async(resolve,reject)=>{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),RPC_TIMEOUT_MS);
+    try{
+      const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal});
+      if(!response.ok)throw new Error(`HTTP_${response.status}`);
+      const payload=await response.json();
+      if(payload.error)throw new Error(payload.error.message||'RPC_ERROR');
+      const account=payload.result?.[0];
+      if(!account)throw new Error('ACCOUNT_NOT_FOUND');
+      resolve(account);
+    }catch(error){
+      reject(error?.name==='AbortError'?new Error('RPC_TIMEOUT'):error);
+    }finally{clearTimeout(timer)}
+  });
 }
 
 async function getAccount(accountName){
-  const body = JSON.stringify({
-    jsonrpc: '2.0',
-    method: 'condenser_api.get_accounts',
-    params: [[accountName]],
-    id: 1
-  });
-  let lastError = null;
-
-  for(const rpc of STEEM_RPCS){
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
-    try{
-      const response = await fetch(rpc, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body,
-        cache: 'no-store',
-        signal: controller.signal
-      });
-      if(!response.ok) throw new Error(`HTTP_${response.status}`);
-      const payload = await response.json();
-      if(payload.error) throw new Error(payload.error.message || 'RPC_ERROR');
-      const account = payload.result?.[0];
-      if(account) return account;
-      throw new Error('ACCOUNT_NOT_FOUND');
-    }catch(error){
-      lastError = error?.name === 'AbortError' ? new Error('RPC_TIMEOUT') : error;
-      console.warn(`Steem RPC failed: ${rpc}`, lastError);
-      if(lastError.message === 'ACCOUNT_NOT_FOUND') throw lastError;
-    }finally{
-      clearTimeout(timer);
-    }
+  const body=JSON.stringify({jsonrpc:'2.0',method:'condenser_api.get_accounts',params:[[accountName]],id:1});
+  const attempts=STEEM_RPCS.map(rpc=>rpcRequest(rpc,body).catch(error=>{console.warn(`Steem RPC failed: ${rpc}`,error);throw error}));
+  try{
+    return await Promise.any(attempts);
+  }catch(errors){
+    const messages=errors?.errors?.map(error=>error?.message).filter(Boolean)||[];
+    if(messages.includes('ACCOUNT_NOT_FOUND'))throw new Error('ACCOUNT_NOT_FOUND');
+    throw new Error('STEEM_RPC_UNAVAILABLE');
   }
-
-  throw new Error('STEEM_RPC_UNAVAILABLE');
 }
 
-export async function verifyPostingKey(username, postingKey){
-  const dsteem = await getDsteem();
-  const accountName = String(username ?? '').trim().toLowerCase();
-  const value = String(postingKey ?? '').trim();
-  if(!accountName) throw new Error('USERNAME_EMPTY');
-  if(!value) throw new Error('POSTING_KEY_EMPTY');
+export async function verifyPostingKey(username,postingKey){
+  const accountName=String(username??'').trim().toLowerCase();
+  const keyValue=String(postingKey??'').trim();
+  if(!accountName)throw new Error('USERNAME_EMPTY');
+  if(!keyValue)throw new Error('POSTING_KEY_EMPTY');
 
-  let privateKey;
-  try{
-    privateKey = dsteem.PrivateKey.fromString(value);
-  }catch{
-    throw new Error('POSTING_KEY_FORMAT');
-  }
+  const authPromise=(async()=>{
+    const dsteem=await getDsteem();
+    let privateKey;
+    try{privateKey=dsteem.PrivateKey.fromString(keyValue)}catch{throw new Error('POSTING_KEY_FORMAT')}
+    let publicKey;
+    try{publicKey=privateKey.createPublic().toString()}catch{throw new Error('POSTING_KEY_PUBLIC_KEY_ERROR')}
 
-  let publicKey;
-  try{
-    publicKey = privateKey.createPublic().toString();
-  }catch{
-    throw new Error('POSTING_KEY_PUBLIC_KEY_ERROR');
-  }
+    const account=await getAccount(accountName);
+    const authority=account?.posting;
+    if(!authority)throw new Error('POSTING_AUTHORITY_MISSING');
 
-  const account = await getAccount(accountName);
-  const authority = account?.posting;
-  if(!authority) throw new Error('POSTING_AUTHORITY_MISSING');
+    const threshold=Number(authority.weight_threshold??1);
+    const keyAuths=Array.isArray(authority.key_auths)?authority.key_auths:[];
+    const matchingWeight=keyAuths.reduce((sum,entry)=>{
+      const authorityKey=Array.isArray(entry)?entry[0]:entry?.key;
+      const weight=Number(Array.isArray(entry)?entry[1]:entry?.weight??0);
+      return normalizeKey(authorityKey)===normalizeKey(publicKey)?sum+weight:sum;
+    },0);
 
-  const threshold = Number(authority.weight_threshold ?? 1);
-  const keyAuths = Array.isArray(authority.key_auths) ? authority.key_auths : [];
-  const matchingWeight = keyAuths.reduce((sum, entry) => {
-    const key = Array.isArray(entry) ? entry[0] : entry?.key;
-    const weight = Number(Array.isArray(entry) ? entry[1] : entry?.weight ?? 0);
-    return normalizeKey(key) === normalizeKey(publicKey) ? sum + weight : sum;
-  }, 0);
+    if(matchingWeight<threshold)throw new Error(`POSTING_KEY_UNAUTHORIZED: public key does not match posting authority (weight ${matchingWeight}/${threshold})`);
+    return {username:account.name,publicKey};
+  })();
 
-  if(matchingWeight < threshold){
-    throw new Error(`POSTING_KEY_UNAUTHORIZED: public key does not match posting authority (weight ${matchingWeight}/${threshold})`);
-  }
-
-  return {username: account.name, publicKey};
+  let timeoutId;
+  const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error('AUTH_TIMEOUT')),AUTH_TIMEOUT_MS)});
+  try{return await Promise.race([authPromise,timeout])}finally{clearTimeout(timeoutId)}
 }
