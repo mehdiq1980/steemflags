@@ -1,4 +1,5 @@
 const STEEM_RPC_ENDPOINTS = [
+  'https://steemflags.mehdiq.workers.dev/api/steem-rpc',
   'https://api.justyy.com',
   'https://api3.justyy.com',
   'https://steemd.steemworld.org',
