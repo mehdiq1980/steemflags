@@ -1,12 +1,5 @@
-const STEEM_RPCS = [
-  'https://api.justyy.com',
-  'https://api3.justyy.com',
-  'https://steemd.steemworld.org',
-  'https://api.steemyy.com',
-  'https://api.steemit.com'
-];
-
-const RPC_TIMEOUT_MS = 5000;
+const STEEM_RPC = 'https://steemflags.mehdiq.workers.dev/api/steem-rpc';
+const RPC_TIMEOUT_MS = 8000;
 const AUTH_TIMEOUT_MS = 15000;
 const DSTEEM_SOURCES = [
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
@@ -43,12 +36,12 @@ async function getDsteem(){
 
 function normalizeKey(value){return String(value??'').trim().toUpperCase()}
 
-function rpcRequest(url,body){
+function rpcRequest(body){
   return new Promise(async(resolve,reject)=>{
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),RPC_TIMEOUT_MS);
     try{
-      const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal});
+      const response=await fetch(STEEM_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal});
       if(!response.ok)throw new Error(`HTTP_${response.status}`);
       const payload=await response.json();
       if(payload.error)throw new Error(payload.error.message||'RPC_ERROR');
@@ -61,10 +54,9 @@ function rpcRequest(url,body){
 
 async function getAccount(accountName){
   const body=JSON.stringify({jsonrpc:'2.0',method:'condenser_api.get_accounts',params:[[accountName]],id:1});
-  const attempts=STEEM_RPCS.map(rpc=>rpcRequest(rpc,body).catch(error=>{console.warn(`Steem RPC failed: ${rpc}`,error);throw error}));
-  try{return await Promise.any(attempts)}catch(errors){
-    const messages=errors?.errors?.map(error=>error?.message).filter(Boolean)||[];
-    if(messages.includes('ACCOUNT_NOT_FOUND'))throw new Error('ACCOUNT_NOT_FOUND');
+  try{return await rpcRequest(body)}catch(error){
+    if(error?.message==='ACCOUNT_NOT_FOUND')throw error;
+    console.warn('Steem Worker RPC failed',error);
     throw new Error('STEEM_RPC_UNAVAILABLE');
   }
 }
