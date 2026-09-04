@@ -49,27 +49,25 @@ async function getDsteem(){
 function normalizeKey(value){return String(value??'').trim().toUpperCase()}
 
 async function rpcRequest(body){
-  let lastError=null;
-  let sawAccountNotFound=false;
-  for(const endpoint of STEEM_RPC_ENDPOINTS){
+  const requests=STEEM_RPC_ENDPOINTS.map(endpoint=>{
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),RPC_TIMEOUT_MS);
-    try{
-      const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal});
-      if(!response.ok)throw new Error(`HTTP_${response.status}`);
-      const payload=await response.json();
-      if(payload?.error)throw new Error(payload.error.message||'RPC_ERROR');
-      const accounts=payload?.result;
-      if(Array.isArray(accounts)&&accounts.length>0&&accounts[0])return accounts[0];
-      sawAccountNotFound=true;
-      throw new Error('ACCOUNT_NOT_FOUND');
-    }catch(error){
-      lastError=error?.name==='AbortError'?new Error('RPC_TIMEOUT'):error;
-      console.warn(`Steem RPC failed: ${endpoint}`,lastError);
-    }finally{clearTimeout(timer)}
+    return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal})
+      .then(async response=>{
+        if(!response.ok)throw new Error(`HTTP_${response.status}`);
+        const payload=await response.json();
+        if(payload?.error)throw new Error(payload.error.message||'RPC_ERROR');
+        const accounts=payload?.result;
+        if(Array.isArray(accounts)&&accounts.length>0&&accounts[0])return accounts[0];
+        throw new Error('ACCOUNT_NOT_FOUND');
+      })
+      .finally(()=>clearTimeout(timer));
+  });
+  try{return await Promise.any(requests)}catch(error){
+    const errors=Array.isArray(error?.errors)?error.errors:[];
+    if(errors.some(item=>item?.message==='ACCOUNT_NOT_FOUND'))throw new Error('ACCOUNT_NOT_FOUND');
+    throw new Error('STEEM_RPC_UNAVAILABLE');
   }
-  if(sawAccountNotFound&&lastError?.message==='ACCOUNT_NOT_FOUND')throw new Error('ACCOUNT_NOT_FOUND');
-  throw new Error(lastError?.message==='ACCOUNT_NOT_FOUND'?'ACCOUNT_NOT_FOUND':'STEEM_RPC_UNAVAILABLE');
 }
 
 async function getAccount(accountName){
