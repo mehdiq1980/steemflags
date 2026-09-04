@@ -1,6 +1,7 @@
 const USERNAME_RE = /^[a-z0-9.-]{3,32}$/;
 const EVENT_ID_RE = /^[A-Za-z0-9._:-]{8,128}$/;
 const MAX_LIMIT = 100;
+const STEEM_RPC = 'https://api.steemit.com';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -63,6 +64,27 @@ export default {
         }
         const issue = await createGitHubIssue(env, { username, sf, eventId, createdAt });
         return json({ ok: true, issue_number: issue.number });
+      }
+
+      if (url.pathname === '/api/steem-rpc' && request.method === 'POST') {
+        const body = await request.json().catch(() => null);
+        if (!body || body.method !== 'condenser_api.get_accounts' || !Array.isArray(body.params) || !Array.isArray(body.params[0]) || body.params[0].length !== 1) {
+          return json({ error: 'Unsupported RPC request' }, 400);
+        }
+        const username = normalizeUsername(body.params[0][0]);
+        if (!USERNAME_RE.test(username)) return json({ error: 'Invalid username' }, 400);
+        const rpcBody = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'condenser_api.get_accounts', params: [[username]] });
+        const response = await fetch(STEEM_RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: rpcBody });
+        const text = await response.text();
+        return new Response(text, { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } });
+      }
+
+      if (url.pathname === '/api/account' && request.method === 'GET') {
+        if (!env.DB) return json({ error: 'D1 database is not configured' }, 503);
+        const username = normalizeUsername(url.searchParams.get('username'));
+        if (!USERNAME_RE.test(username)) return json({ success: false, error: 'Invalid username' }, 400);
+        const row = await env.DB.prepare('SELECT username, sf, avatar FROM leaderboard WHERE username = ?').bind(username).first();
+        return json({ success: true, account: { username, D2E: Number(row?.sf) || 0, Energy: 3, avatar: String(row?.avatar || '') } });
       }
 
       if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
