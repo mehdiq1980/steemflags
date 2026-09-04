@@ -9,8 +9,8 @@ const SESSION_KEY='steemFlagsAuthSession';
 const REWARD_STATE_KEY='steemFlagsPendingRewards';
 const $=id=>document.getElementById(id);
 
-async function loadComponent(){const r=await fetch('./components/app-shell.html?v=20260904-login-title-01',{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
-async function loadAssetBar(){const m=$('assetBarMount');if(!m)return;const r=await fetch('./components/asset-bar.html?v=20260826-assetbar-03',{cache:'no-store'});if(!r.ok)throw Error(`Unable to load asset bar: ${r.status}`);m.innerHTML=await r.text()}
+async function loadComponent(){const r=await fetch('../components/app-shell.html?v=20260904-path-fix-01',{cache:'no-store'});if(!r.ok)throw Error(`Unable to load component: ${r.status}`);return r.text()}
+async function loadAssetBar(){const m=$('assetBarMount');if(!m)return;const r=await fetch('../components/asset-bar.html?v=20260904-path-fix-01',{cache:'no-store'});if(!r.ok)throw Error(`Unable to load asset bar: ${r.status}`);m.innerHTML=await r.text()}
 async function fetchAccount(u){const r=await fetch(`${API_BASE}/api/account?username=${encodeURIComponent(u)}`,{cache:'no-store'});if(!r.ok)throw Error(`ACCOUNT_API_${r.status}`);const d=await r.json();if(!d?.success||!d.account)throw Error('ACCOUNT_API_INVALID');return d.account}
 async function fetchSteemBalance(a){const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'condenser_api.get_accounts',params:[[a]]});try{const r=await fetch(`${API_BASE}/api/steem-rpc`,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store'});if(!r.ok)return null;const d=await r.json(),b=d?.result?.[0]?.balance;if(typeof b==='string'&&/\d/.test(b))return b.replace(/\s*STEEM\s*$/i,'').trim()}catch{}return null}
 function readSession(){try{const s=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');return s?.username||null}catch{return null}}
@@ -20,9 +20,8 @@ function savedKey(u){return u?`steemflagsGameState_${String(u).trim().toLowerCas
 function getSavedGame(u){try{const r=localStorage.getItem(savedKey(u));return r?JSON.parse(r):null}catch{return null}}
 function clearSavedGame(u){try{localStorage.removeItem(savedKey(u))}catch{}}
 function saveRewardState(s){try{localStorage.setItem(REWARD_STATE_KEY,JSON.stringify(s))}catch{}}
-function readRewardState(){try{const s=JSON.parse(localStorage.getItem(REWARD_STATE_KEY)||'null');return s?.username?s:null}catch{return null}}
 function clearRewardState(){try{localStorage.removeItem(REWARD_STATE_KEY)}catch{}}
-function performLogout(){try{localStorage.removeItem(SESSION_KEY);localStorage.removeItem(REWARD_STATE_KEY);sessionStorage.removeItem('steemFlagsSponsorContext');sessionStorage.removeItem('steemFlagsSponsorReward')}catch{}window.location.replace('./index.html')}
+function performLogout(){try{localStorage.removeItem(SESSION_KEY);localStorage.removeItem(REWARD_STATE_KEY);sessionStorage.removeItem('steemFlagsSponsorContext');sessionStorage.removeItem('steemFlagsSponsorReward')}catch{}window.location.replace('../index.html')}
 async function bootstrap(){const a=$('app');a.innerHTML=await loadComponent();await loadAssetBar();await loadMenu();await start()}
 
 async function start(){
@@ -50,4 +49,4 @@ async function start(){
  if(language){language.onchange=()=>{const lang=setLanguage(language.value);applyLanguage(document,lang);applyEnglishBrandTitles(lang);if(!gameView.hidden&&game.current)renderQuestion(game.current,game.score,game.questionNumber)}}
  const initialLanguage=getLanguage();applyLanguage(document,initialLanguage);applyEnglishBrandTitles(initialLanguage);loginView.hidden=true;home.hidden=true;leaderboard.hidden=true;gameView.hidden=true;username=readSession();if(username){try{await sync();showHome()}catch{clearSession();username=null;loginView.hidden=false}}else loginView.hidden=false
 }
-bootstrap().then(()=>window.dispatchEvent(new CustomEvent('steemflags:ready',{detail:{success:true}}))).catch(console.error);
+bootstrap().then(()=>window.dispatchEvent(new CustomEvent('steemflags:ready',{detail:{success:true}}))).catch(error=>{console.error('Steem Flags bootstrap failed:',error);const app=$('app');const preloader=$('sf-preloader');if(preloader)preloader.classList.add('sf-loaded');if(app){const detail=String(error?.message||error||'Startup failed').replace(/[<>&]/g,'');app.innerHTML='<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: '+detail+'</p><p class="muted">Please refresh the page.</p></section></main>'}});
