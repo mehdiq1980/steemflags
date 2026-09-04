@@ -12,10 +12,42 @@ const STEEM_RPCS = [
 ];
 
 const RPC_TIMEOUT_MS = 7000;
+const DSTEEM_SOURCES = [
+  'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
+  'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
+];
+let dsteemPromise = null;
 
-function getDsteem(){
-  if(!globalThis.dsteem?.PrivateKey) throw new Error('AUTH_LIBRARY_UNAVAILABLE');
-  return globalThis.dsteem;
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const existing = [...document.scripts].find(s => s.src === src);
+    if(existing){
+      if(globalThis.dsteem?.PrivateKey) return resolve(globalThis.dsteem);
+      existing.addEventListener('load',()=>resolve(globalThis.dsteem),{once:true});
+      existing.addEventListener('error',()=>reject(new Error('AUTH_LIBRARY_LOAD_FAILED')),{once:true});
+      return;
+    }
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=false;
+    script.onload=()=>globalThis.dsteem?.PrivateKey ? resolve(globalThis.dsteem) : reject(new Error('AUTH_LIBRARY_INVALID'));
+    script.onerror=()=>reject(new Error('AUTH_LIBRARY_LOAD_FAILED'));
+    document.head.appendChild(script);
+  });
+}
+
+async function getDsteem(){
+  if(globalThis.dsteem?.PrivateKey) return globalThis.dsteem;
+  if(!dsteemPromise){
+    dsteemPromise=(async()=>{
+      let lastError=null;
+      for(const src of DSTEEM_SOURCES){
+        try{return await loadScript(src)}catch(error){lastError=error}
+      }
+      throw new Error(`AUTH_LIBRARY_UNAVAILABLE: ${lastError?.message||'dsteem could not be loaded'}`);
+    })().catch(error=>{dsteemPromise=null;throw error});
+  }
+  return dsteemPromise;
 }
 
 function normalizeKey(value){
@@ -65,7 +97,7 @@ async function getAccount(accountName){
 }
 
 export async function verifyPostingKey(username, postingKey){
-  const dsteem = getDsteem();
+  const dsteem = await getDsteem();
   const accountName = String(username ?? '').trim().toLowerCase();
   const value = String(postingKey ?? '').trim();
   if(!accountName) throw new Error('USERNAME_EMPTY');
