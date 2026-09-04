@@ -1,6 +1,6 @@
 import { FlagGame } from './game.js';
 import { applyLanguage, getLanguage, t, setLanguage } from './i18n.js';
-import { verifyPostingKey } from './steem-auth.js?v=20260904-login-fix-05';
+import { verifyPostingKey } from './steem-auth.js?v=20260904-login-fix-06';
 import { saveGameResult } from './reward.js';
 import { loadMenu } from './menu.js';
 
@@ -47,4 +47,4 @@ async function start(){
  if(language){language.onchange=()=>{const lang=setLanguage(language.value);applyLanguage(document,lang);applyEnglishBrandTitles(lang);if(!gameView.hidden&&game.current)renderQuestion(game.current,game.score,game.questionNumber)}}
  const initialLanguage=getLanguage();applyLanguage(document,initialLanguage);applyEnglishBrandTitles(initialLanguage);loginView.hidden=true;home.hidden=true;leaderboard.hidden=true;gameView.hidden=true;username=readSession();if(username){try{await sync();showHome()}catch{clearSession();username=null;loginView.hidden=false}}else loginView.hidden=false
 }
-bootstrap().then(()=>window.dispatchEvent(new CustomEvent('steemflags:ready',{detail:{success:true}}))).catch(error=>{console.error('Steem Flags bootstrap failed:',error);const app=$('app');const preloader=$('sf-preloader');if(preloader)preloader.classList.add('sf-loaded');if(app){const detail=String(error?.message||error||'Startup failed').replace(/[<>&]/g,'');app.innerHTML='<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: '+detail+'</p><p class="muted">Please refresh the page.</p></section></main>'}});
+bootstrap().then(()=>window.dispatchEvent(new CustomEvent('steemflags:ready',{detail:{success:true}}))).catch(error=>{console.error('Steem Flags bootstrap failed:',error);const app=$('app');const preloader=$('sf-preloader');if(preloader)preloader.classList.add('sf-loaded');if(app){const detail=String(error?.message||error||'Startup error').replace(/[<>&]/g,'');app.innerHTML='<main class="appShell"><section class="card hero"><p class="eyebrow">STEEM FLAGS</p><h1>Unable to load the game</h1><p class="muted">Startup error: '+detail+'</p><p class="muted">Please refresh the page.</p></section></main>'}});
