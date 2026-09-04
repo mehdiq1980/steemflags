@@ -1,17 +1,12 @@
 const STEEM_RPCS = [
+  'https://steemflags.mehdiq.workers.dev/api/steem-rpc',
   'https://api.justyy.com',
   'https://api3.justyy.com',
   'https://steemd.steemworld.org',
-  'https://api.steemyy.com',
-  'https://api2.justyy.com',
-  'https://api.steemitdev.com',
-  'https://api.steemit.com',
-  'https://steem.senior.workers.dev',
-  'https://steem.justyy.com',
-  'https://api.steem.fans'
+  'https://api.steemyy.com'
 ];
 
-const RPC_TIMEOUT_MS = 7000;
+const RPC_TIMEOUT_MS = 5000;
 const DSTEEM_SOURCES = [
   'https://unpkg.com/dsteem@0.11.5/dist/dsteem.js',
   'https://cdn.jsdelivr.net/npm/dsteem@0.11.5/dist/dsteem.js'
@@ -30,8 +25,9 @@ function loadScript(src){
     const script=document.createElement('script');
     script.src=src;
     script.async=false;
-    script.onload=()=>globalThis.dsteem?.PrivateKey ? resolve(globalThis.dsteem) : reject(new Error('AUTH_LIBRARY_INVALID'));
-    script.onerror=()=>reject(new Error('AUTH_LIBRARY_LOAD_FAILED'));
+    const timer=setTimeout(()=>{script.remove();reject(new Error('AUTH_LIBRARY_TIMEOUT'))},8000);
+    script.onload=()=>{clearTimeout(timer);globalThis.dsteem?.PrivateKey ? resolve(globalThis.dsteem) : reject(new Error('AUTH_LIBRARY_INVALID'))};
+    script.onerror=()=>{clearTimeout(timer);reject(new Error('AUTH_LIBRARY_LOAD_FAILED'))};
     document.head.appendChild(script);
   });
 }
@@ -62,7 +58,6 @@ async function getAccount(accountName){
     id: 1
   });
   let lastError = null;
-  let sawAccountNotFound = false;
 
   for(const rpc of STEEM_RPCS){
     const controller = new AbortController();
@@ -80,20 +75,17 @@ async function getAccount(accountName){
       if(payload.error) throw new Error(payload.error.message || 'RPC_ERROR');
       const account = payload.result?.[0];
       if(account) return account;
-      sawAccountNotFound = true;
       throw new Error('ACCOUNT_NOT_FOUND');
     }catch(error){
       lastError = error?.name === 'AbortError' ? new Error('RPC_TIMEOUT') : error;
       console.warn(`Steem RPC failed: ${rpc}`, lastError);
+      if(lastError.message === 'ACCOUNT_NOT_FOUND') throw lastError;
     }finally{
       clearTimeout(timer);
     }
   }
 
-  if(sawAccountNotFound && lastError?.message === 'ACCOUNT_NOT_FOUND'){
-    throw new Error('ACCOUNT_NOT_FOUND');
-  }
-  throw new Error(lastError?.message === 'ACCOUNT_NOT_FOUND' ? 'ACCOUNT_NOT_FOUND' : 'STEEM_RPC_UNAVAILABLE');
+  throw new Error('STEEM_RPC_UNAVAILABLE');
 }
 
 export async function verifyPostingKey(username, postingKey){
