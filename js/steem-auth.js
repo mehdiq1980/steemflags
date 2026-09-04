@@ -1,13 +1,14 @@
 const STEEM_RPCS = [
-  'https://api.steemit.com',
-  'https://api.steemitdev.com',
-  'https://api.steem.fans',
-  'https://api.steemyy.com',
-  'https://steem.justyy.com',
   'https://api.justyy.com',
-  'https://api2.justyy.com',
   'https://api3.justyy.com',
-  'https://steemflags.mehdiq.workers.dev/api/steem-rpc'
+  'https://steemd.steemworld.org',
+  'https://api.steemyy.com',
+  'https://api2.justyy.com',
+  'https://api.steemitdev.com',
+  'https://api.steemit.com',
+  'https://steem.senior.workers.dev',
+  'https://steem.justyy.com',
+  'https://api.steem.fans'
 ];
 
 const RPC_TIMEOUT_MS = 7000;
