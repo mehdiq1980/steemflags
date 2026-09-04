@@ -39,38 +39,33 @@ async function getDsteem(){
 
 function normalizeKey(value){return String(value??'').trim().toUpperCase()}
 
-function rpcRequest(body){
-  return new Promise(async(resolve,reject)=>{
-    let settled=false;
-    let emptyAccounts=0;
-    const finish=(error,value)=>{if(settled)return;settled=true;error?reject(error):resolve(value)};
-    await Promise.all(STEEM_RPC_ENDPOINTS.map(async endpoint=>{
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),RPC_TIMEOUT_MS);
-      try{
-        const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal});
-        if(!response.ok)throw new Error(`HTTP_${response.status}`);
-        const payload=await response.json();
-        if(payload.error)throw new Error(payload.error.message||'RPC_ERROR');
-        const account=payload.result?.[0];
-        if(account){finish(null,account);return}
-        emptyAccounts++;
-        if(emptyAccounts===STEEM_RPC_ENDPOINTS.length)finish(new Error('ACCOUNT_NOT_FOUND'));
-      }catch(error){
-        // If every endpoint fails, report the network error after all attempts finish.
-        if(--rpcRequest.failed===0)finish(error?.name==='AbortError'?new Error('RPC_TIMEOUT'):error);
-      }finally{clearTimeout(timer)}
-    }));
-  });
+async function rpcRequest(body){
+  const results=await Promise.allSettled(STEEM_RPC_ENDPOINTS.map(async endpoint=>{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),RPC_TIMEOUT_MS);
+    try{
+      const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:controller.signal});
+      if(!response.ok)throw new Error(`HTTP_${response.status}`);
+      const payload=await response.json();
+      if(payload?.error)throw new Error(payload.error.message||'RPC_ERROR');
+      const accounts=payload?.result;
+      if(Array.isArray(accounts)&&accounts.length>0&&accounts[0])return accounts[0];
+      return null;
+    }catch(error){
+      throw error?.name==='AbortError'?new Error('RPC_TIMEOUT'):error;
+    }finally{clearTimeout(timer)}
+  }));
+  const accountResult=results.find(result=>result.status==='fulfilled'&&result.value);
+  if(accountResult)return accountResult.value;
+  const allEmpty=results.some(result=>result.status==='fulfilled'&&result.value===null);
+  if(allEmpty)throw new Error('ACCOUNT_NOT_FOUND');
+  const timeoutResult=results.find(result=>result.status==='rejected'&&result.reason?.message==='RPC_TIMEOUT');
+  throw timeoutResult?.reason||new Error('STEEM_RPC_UNAVAILABLE');
 }
-rpcRequest.failed=STEEM_RPC_ENDPOINTS.length;
 
 async function getAccount(accountName){
   const body=JSON.stringify({jsonrpc:'2.0',method:'condenser_api.get_accounts',params:[[accountName]],id:1});
-  try{
-    rpcRequest.failed=STEEM_RPC_ENDPOINTS.length;
-    return await rpcRequest(body);
-  }catch(error){
+  try{return await rpcRequest(body)}catch(error){
     if(error?.message==='ACCOUNT_NOT_FOUND')throw error;
     console.warn('Steem RPC failed on all endpoints',error);
     throw new Error('STEEM_RPC_UNAVAILABLE');
